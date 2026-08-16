@@ -266,16 +266,22 @@
     if (!track) return;
     // 若 API 拉到了数据，重新渲染 slides（覆盖首屏空占位，杜绝示例图闪现）
     if (HERO_ITEMS && HERO_ITEMS.length) {
-      track.innerHTML = HERO_ITEMS.map((it) => `
+      // 纯静态站：轮播图永远走 hero.json 里的静态路径（images/xxx.jpg 或 data: 内嵌），
+      // 不再依赖 /api/hero/<id>/image 后端接口（纯静态托管下该接口必定 404，会导致裂图）。
+      track.innerHTML = HERO_ITEMS.map((it) => {
+        const rawImg = it.image || "";
+        const imgSrc = (typeof rawImg === "string" && rawImg.startsWith("data:")) ? rawImg : esc(rawImg);
+        return `
         <div class="hero-slide wm" data-wm="${WM_TEXT}">
-          <img src="${it.hasImage ? "/api/hero/" + encodeURIComponent(it.id) + "/image" : esc(it.image || "")}" alt="${esc(it.title)}" loading="lazy" />
+          ${imgSrc ? `<img src="${imgSrc}" alt="${esc(it.title)}" loading="lazy" onerror="this.classList.add('img-broken')" />` : ""}
           <div class="hero-cap">
             ${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">` : ""}
               <h2>${esc(it.title)}</h2>
               <p>${esc(it.subtitle)}</p>
             ${it.link ? `</a>` : ""}
           </div>
-        </div>`).join("");
+        </div>`;
+      }).join("");
       if (dotsEl) {
         dotsEl.innerHTML = HERO_ITEMS.map((_, i) => `<button aria-label="第 ${i + 1} 张" ${i === 0 ? 'class="active"' : ''}></button>`).join("");
       }
