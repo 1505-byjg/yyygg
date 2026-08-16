@@ -55,7 +55,11 @@
   }
   async function loadData(file) {
     try {
-      const r = await realFetch("data/" + file);
+      // 加时间戳防缓存：data/*.json 无版本号，GitHub Pages/浏览器会缓存，
+      // 导致"重新部署后内容仍不更新"（同人页提示/物料等数据 JSON 同病）。
+      // 查询串对静态托管与本地 serve.cjs（已剥查询串）均无害。
+      const sep = file.indexOf("?") === -1 ? "?" : "&";
+      const r = await realFetch("data/" + file + sep + "_=" + Date.now());
       if (!r.ok) return null;
       return await r.json();
     } catch (e) { return null; }
