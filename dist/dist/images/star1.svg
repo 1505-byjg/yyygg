@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#F4F1EC"/><stop offset="1" stop-color="#7E9CB8"/></linearGradient></defs>
+<rect width="600" height="800" fill="url(#g)"/>
+<circle cx="252" cy="474" r="83" fill="#7E9CB8" opacity="0.14"/><circle cx="409" cy="198" r="119" fill="#7E9CB8" opacity="0.10"/><circle cx="281" cy="283" r="70" fill="#7E9CB8" opacity="0.10"/><circle cx="211" cy="187" r="55" fill="#7E9CB8" opacity="0.14"/>
+<text x="300.0" y="400.0" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="56" fill="#3A3F44" text-anchor="middle" font-weight="600">林深</text>
+<text x="300" y="472" font-family="sans-serif" font-size="32" fill="#3A3F44" text-anchor="middle" opacity="0.7">形象占位图</text>
+</svg>

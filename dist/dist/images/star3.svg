@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#F1ECE4"/><stop offset="1" stop-color="#A7C0D8"/></linearGradient></defs>
+<rect width="600" height="800" fill="url(#g)"/>
+<circle cx="296" cy="72" r="47" fill="#A7C0D8" opacity="0.14"/><circle cx="565" cy="89" r="111" fill="#A7C0D8" opacity="0.10"/><circle cx="357" cy="606" r="114" fill="#A7C0D8" opacity="0.08"/><circle cx="140" cy="665" r="119" fill="#A7C0D8" opacity="0.14"/>
+<text x="300.0" y="400.0" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="56" fill="#3A3F44" text-anchor="middle" font-weight="600">顾屿</text>
+<text x="300" y="472" font-family="sans-serif" font-size="32" fill="#3A3F44" text-anchor="middle" opacity="0.7">形象占位图</text>
+</svg>

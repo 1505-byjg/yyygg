@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#EFEAE3"/><stop offset="1" stop-color="#E0A96D"/></linearGradient></defs>
+<rect width="800" height="600" fill="url(#g)"/>
+<circle cx="378" cy="244" r="99" fill="#E0A96D" opacity="0.14"/><circle cx="685" cy="584" r="77" fill="#E0A96D" opacity="0.08"/><circle cx="463" cy="383" r="42" fill="#E0A96D" opacity="0.14"/><circle cx="538" cy="153" r="72" fill="#E0A96D" opacity="0.08"/>
+<text x="400.0" y="300.0" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="42" fill="#3A3F44" text-anchor="middle" font-weight="600">演唱会直拍</text>
+<text x="400" y="354" font-family="sans-serif" font-size="24" fill="#3A3F44" text-anchor="middle" opacity="0.7">stage</text>
+</svg>
