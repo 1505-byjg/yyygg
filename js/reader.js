@@ -102,6 +102,7 @@
 
   /* ---------- 主流程 ---------- */
   async function init() {
+    window.__appBooted = true;   // 标记阅读器脚本已启动，供 load-guard.js 启动自检（空白页定位）
     applySettings();
     bindUI();
     const id = new URLSearchParams(location.search).get("id");

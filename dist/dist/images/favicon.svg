@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-<circle cx="32" cy="32" r="30" fill="#7E9CB8"/>
-<!-- 🤘 rock-on hand sign (scaled for favicon) -->
-<path d="M32 16
-   c-1 0-1.8.8-1.8 1.8v6l-4-3c-.9-.6-2-.4-2.6.5s-.4 2 .5 2.6l3.6 2.7V30l-5-2.5c-1-.5-2.2-.1-2.7.9s-.1 2.2.9 2.7L30 34V43c0 1.1.9 2 2 2s2-.9 2-2V35.5l5.5-2.7c1-.5 1.4-1.7.9-2.7s-1.7-1.4-2.7-.9L34 31v-3.5l3.1-2.3c.9-.6 1.1-1.7.5-2.6s-1.7-1.1-2.6-.5L33 26V17.8c0-1-.8-1.8-1.8-1.8z"
-  fill="#D9A679" stroke="#D9A679" stroke-width="0.5" stroke-linejoin="round"/>
-</svg>

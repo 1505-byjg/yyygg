@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
-<circle cx="60" cy="60" r="54" fill="#7E9CB8"/>
-<circle cx="60" cy="60" r="34" fill="#F4F1EC"/>
-<!-- 🤘 rock-on hand sign -->
-<path d="M60 30
-   c-2 0-3.5 1.5-3.5 3.5v12l-8-6c-1.8-1.2-4-.8-5.2 1s-.8 4 1 5.2l7.2 5.4V58l-10-5c-2-1-4.4-.2-5.4 1.8s-.2 4.4 1.8 5.4l13.6 6.8V82c0 2.2 1.8 4 4 4s4-1.8 4-4v-15l11-5.5c2-1 2.8-3.4 1.8-5.4s-3.4-2.8-5.4-1.8L68 62v-6.9l6.2-4.6c1.8-1.2 2.2-3.4 1-5.2s-3.4-2.2-5.2-1l-6.5 4.9V33.5c0-2-1.5-3.5-3.5-3.5z"
-  fill="#D9A679" stroke="#D9A679" stroke-width="1" stroke-linejoin="round"/>
-</svg>

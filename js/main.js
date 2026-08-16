@@ -1097,6 +1097,7 @@
     initLazyAndWatermark(); initReveal();
     // 兜底：极端情况下若 IO 未触发，定时强制显示，避免内容永久隐藏
     setTimeout(() => { $$(".reveal:not(.in)").forEach((e) => e.classList.add("in")); }, 1500);
+    window.__appBooted = true;   // 标记主脚本已启动，供 load-guard.js 启动自检（空白页定位）
   }
 
   window.__toast = toast; // 供同人音频试听等内联按钮调用

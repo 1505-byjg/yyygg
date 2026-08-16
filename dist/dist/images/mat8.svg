@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="#ECE6DD"/><stop offset="1" stop-color="#E8C3A0"/></linearGradient></defs>
-<rect width="800" height="600" fill="url(#g)"/>
-<circle cx="767" cy="538" r="91" fill="#E8C3A0" opacity="0.10"/><circle cx="77" cy="492" r="84" fill="#E8C3A0" opacity="0.10"/><circle cx="388" cy="392" r="107" fill="#E8C3A0" opacity="0.08"/><circle cx="17" cy="367" r="45" fill="#E8C3A0" opacity="0.10"/>
-<text x="400.0" y="300.0" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="42" fill="#3A3F44" text-anchor="middle" font-weight="600">手机壁纸</text>
-<text x="400" y="354" font-family="sans-serif" font-size="24" fill="#3A3F44" text-anchor="middle" opacity="0.7">wall</text>
-</svg>
