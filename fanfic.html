@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>同人专区 · 摇摇又汞汞</title>
+  <link rel="icon" href="images/favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode:"class", theme:{ extend:{ colors:{
+      mblue:{50:"#EEF2F6",100:"#D9E2EA",300:"#A7C0D8",500:"#7E9CB8",700:"#5C7A96",900:"#3E566B"},
+      morange:{100:"#F6E7D8",300:"#E8C3A0",500:"#D9A679",700:"#B97F4E"} } } } };
+  </script>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/reader-guard.css" />
+  <style>
+    .composer-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .composer-grid .field label{font-weight:600;display:block;margin-bottom:6px}
+    .composer-grid .field input,.composer-grid .field select,#postDesc{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-soft);color:var(--text)}
+    #postDesc{margin-top:12px}
+    @media(max-width:560px){.composer-grid{grid-template-columns:1fr}}
+  </style>
+  <script src="js/static-api.js"></script>
+</head>
+<body data-page="fanfic" class="m-bg m-text">
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html"><img src="images/logo.svg" alt="logo" /><span>摇摇又汞汞</span></a>
+      <nav class="nav-menu" id="navMenu">
+        <a href="material.html" data-nav="material">物料合集</a>
+        <a href="fanfic.html" data-nav="fanfic">同人专区</a>
+        <a href="rule.html" data-nav="rule">社区规则</a>
+      </nav>
+      <div class="search-box" id="searchBox"><span>🔍</span><input id="globalSearch" type="search" placeholder="搜索采访 / 节目 / 同人" /></div>
+      <div class="nav-actions">
+        <button class="btn btn-ghost" id="themeToggle" title="夜间模式">🌙</button>
+        <button class="hamburger" id="hamburger" aria-label="菜单">☰</button>
+        <button class="hamburger" id="searchToggle" aria-label="搜索" style="margin-left:0">🔍</button>
+      </div>
+    </div>
+  </header>
+  <div class="search-panel" id="searchPanel"><div class="inner"><div id="searchResultList"></div></div></div>
+
+  <main style="margin-top:calc(var(--nav-h) + 20px)">
+    <section class="section">
+      <div class="section-head"><span class="bar"></span><h3>同人专区</h3><span class="more">图片 · 文章 · 视频</span></div>
+      <div class="filter-row"><div class="filter-bar" id="fanKinds"></div><div class="filter-bar" id="fanSort"></div></div>
+      <div class="filter-row"><div class="filter-bar" id="fanPairs"></div></div>
+      <div class="filter-row"><div class="filter-bar" id="fanAuthors"></div></div>
+
+      <!-- 同人投稿已迁移至管理后台，前台仅保留说明 -->
+      <p id="composerLock" class="m-text-soft" style="font-size:13px;margin:0 0 16px">🔒 同人作品由管理员统一发布，如因不可言说问题不能发布在其他平台，可联系管理者代发。</p>
+
+      <div class="fan-grid" id="fanGrid"></div>
+      <p class="m-text-soft" style="font-size:13px;margin-top:18px">
+        💡 同人作品均为粉丝原创，版权归作者所有。转载请获取授权，严禁商用、二改。
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div><h5>摇摇又汞汞</h5><a href="index.html">首页</a><a href="fanfic.html">同人专区</a><a href="material.html">物料合集</a></div>
+      <div><h5>合规</h5><a href="rule.html">用户协议</a></div>
+      <div class="contact-card">
+        <h5>关注或联系我们</h5>
+        <p class="contact-sub">扫码关注公众号 / 微博，获取最新动态与应援资讯</p>
+        <div class="contact-qrs">
+          <div class="qr-item">
+            <img src="images/qr-wechat.jpg" alt="公众号二维码" />
+            <span>公众号：有点摇汞</span>
+          </div>
+          <div class="qr-item">
+            <img src="images/qr-weibo.jpg" alt="微博二维码" />
+            <span>微博：@我不是刚睡着吗</span>
+          </div>
+        </div>
+        <p class="contact-hotline">联系邮箱：<a href="mailto:buyaojiugong@163.com">buyaojiugong@163.com</a></p>
+      </div>
+    </div>
+    <div class="copy">特别鸣谢：本站轮播图美工：请在第三十七分钟和我见面吧</div>
+    <div class="copy">© 2026 摇摇又汞汞 · 仅供粉丝正当应援使用</div>
+  </footer>
+
+  <div class="float-bar">
+    <button id="floatReport" title="举报入口">🚩</button>
+    <button id="floatTop" title="回到顶部">↑</button>
+  </div>
+
+  <script src="js/main.js?v=20260809c"></script>
+  <script src="js/reader-guard.js"></script>
+
+  <div id="fanPostModal" class="modal-mask fan-post-modal">
+    <div class="modal-card fan-post-card">
+      <button class="modal-close" data-close="fanPostModal" aria-label="关闭">×</button>
+      <div id="fanPostBody" class="fan-post-body"></div>
+    </div>
+  </div>
+
+  <!-- 编辑弹窗 -->
+  <div id="fanEditModal" class="modal-mask">
+    <div class="modal-card" style="max-width:700px;padding:28px 26px">
+      <button class="modal-close" data-close="fanEditModal" aria-label="关闭">×</button>
+      <h3 style="margin:0 0 18px">编辑文章</h3>
+      <input id="fanEditId" type="hidden" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">标题</label>
+          <input id="fanEditTitle" class="ed-inp" maxlength="120" /></div>
+        <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">作者署名</label>
+          <input id="fanEditAuthor" class="ed-inp" maxlength="30" /></div>
+        <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">配对</label>
+          <select id="fanEditPair" class="ed-inp">
+            <option value="年上">年上</option><option value="年下">年下</option><option value="无差">无差</option>
+          </select></div>
+        <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">连载状态</label>
+          <select id="fanEditSerial" class="ed-inp">
+            <option value="single">短篇</option><option value="serial">连载中</option><option value="completed">已完结</option>
+          </select></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">标签 <span class="m-text-soft" style="font-weight:400">（点击切换）</span></label>
+        <div id="fanEditTags" class="ed-tag-cards"></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">正文（含章节标题的 HTML）</label>
+        <textarea id="fanEditContent" class="ed-inp" rows="14" style="font-family:monospace;font-size:13px;line-height:1.7;resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost" data-close="fanEditModal" type="button">取消</button>
+        <button class="btn btn-blue" id="fanEditSave" type="button">保存修改</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

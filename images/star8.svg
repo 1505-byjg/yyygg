@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#ECE6DD"/><stop offset="1" stop-color="#E8C3A0"/></linearGradient></defs>
+<rect width="600" height="800" fill="url(#g)"/>
+<circle cx="328" cy="172" r="104" fill="#E8C3A0" opacity="0.10"/><circle cx="503" cy="353" r="123" fill="#E8C3A0" opacity="0.08"/><circle cx="30" cy="560" r="127" fill="#E8C3A0" opacity="0.08"/><circle cx="82" cy="117" r="48" fill="#E8C3A0" opacity="0.10"/>
+<text x="300.0" y="400.0" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="56" fill="#3A3F44" text-anchor="middle" font-weight="600">温知夏</text>
+<text x="300" y="472" font-family="sans-serif" font-size="32" fill="#3A3F44" text-anchor="middle" opacity="0.7">形象占位图</text>
+</svg>

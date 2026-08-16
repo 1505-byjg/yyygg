@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#ECE6DD"/><stop offset="1" stop-color="#A7C0D8"/></linearGradient></defs>
+<rect width="200" height="200" fill="url(#g)"/>
+<circle cx="125" cy="138" r="109" fill="#7E9CB8" opacity="0.14"/><circle cx="28" cy="27" r="86" fill="#7E9CB8" opacity="0.08"/><circle cx="168" cy="166" r="118" fill="#7E9CB8" opacity="0.14"/><circle cx="83" cy="37" r="41" fill="#7E9CB8" opacity="0.10"/>
+<text x="100.0" y="100.0" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="14" fill="#3A3F44" text-anchor="middle" font-weight="600">访客</text>
+
+</svg>
