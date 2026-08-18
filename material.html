@@ -2,8 +2,28 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <!-- auto-reload on deploy: 检测到 version.txt 变化则自动强刷，根治移动端缓存空白 -->
+  <script>
+  (function(){
+    try{
+      var KEY="_site_ver_";
+      var xhr=new XMLHttpRequest();
+      xhr.open("GET","version.txt?_="+Date.now(),true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4 && xhr.status===200){
+          var v=(xhr.responseText||"").trim();
+          if(!v) return;
+          var old=localStorage.getItem(KEY);
+          try{ localStorage.setItem(KEY,v); }catch(e){}
+          if(old && old!==v){ location.reload(true); }
+        }
+      };
+      xhr.send();
+    }catch(e){}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="js/load-guard.js?v=202608170037"></script>
+  <script src="js/load-guard.js?v=202608182210"></script>
   <title>物料合集 · 摇摇又汞汞</title>
   <link rel="icon" href="images/favicon.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,9 +32,9 @@
       mblue:{50:"#EEF2F6",100:"#D9E2EA",300:"#A7C0D8",500:"#7E9CB8",700:"#5C7A96",900:"#3E566B"},
       morange:{100:"#F6E7D8",300:"#E8C3A0",500:"#D9A679",700:"#B97F4E"} } } } };
   </script>
-  <link rel="stylesheet" href="css/style.css?v=202608170037" />
+  <link rel="stylesheet" href="css/style.css?v=202608182210" />
   <link rel="stylesheet" href="css/reader-guard.css" />
-  <script src="js/static-api.js?v=202608170037"></script>
+  <script src="js/static-api.js?v=202608182210"></script>
 </head>
 <body data-page="material" class="m-bg m-text">
 
@@ -76,7 +96,7 @@
     <button id="floatTop" title="回到顶部">↑</button>
   </div>
 
-  <script src="js/main.js?v=202608170037"></script>
+  <script src="js/main.js?v=202608182210"></script>
   <script src="js/reader-guard.js"></script>
 </body>
 </html>

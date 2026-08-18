@@ -2,8 +2,28 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <!-- auto-reload on deploy: 检测到 version.txt 变化则自动强刷，根治移动端缓存空白 -->
+  <script>
+  (function(){
+    try{
+      var KEY="_site_ver_";
+      var xhr=new XMLHttpRequest();
+      xhr.open("GET","version.txt?_="+Date.now(),true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4 && xhr.status===200){
+          var v=(xhr.responseText||"").trim();
+          if(!v) return;
+          var old=localStorage.getItem(KEY);
+          try{ localStorage.setItem(KEY,v); }catch(e){}
+          if(old && old!==v){ location.reload(true); }
+        }
+      };
+      xhr.send();
+    }catch(e){}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="js/load-guard.js?v=202608170037"></script>
+  <script src="js/load-guard.js?v=202608182210"></script>
   <title>摇摇又汞汞 · 采访 · 节目 · 同人</title>
   <meta name="description" content="合规、温柔的明星安利与应援社区：采访、节目物料与同人创作。" />
   <link rel="icon" href="images/favicon.svg" />
@@ -22,9 +42,9 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="css/style.css?v=202608170037" />
+  <link rel="stylesheet" href="css/style.css?v=202608182210" />
   <link rel="stylesheet" href="css/reader-guard.css" />
-  <script src="js/static-api.js?v=202608170037"></script>
+  <script src="js/static-api.js?v=202608182210"></script>
 </head>
 
 <body data-page="index" class="m-bg m-text">
@@ -148,7 +168,7 @@
     </div>
   </div>
 
-  <script src="js/main.js?v=202608170037"></script>
+  <script src="js/main.js?v=202608182210"></script>
   <script src="js/reader-guard.js"></script>
 </body>
 </html>

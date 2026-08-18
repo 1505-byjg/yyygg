@@ -2,13 +2,33 @@
 <html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8" />
+  <!-- auto-reload on deploy: 检测到 version.txt 变化则自动强刷，根治移动端缓存空白 -->
+  <script>
+  (function(){
+    try{
+      var KEY="_site_ver_";
+      var xhr=new XMLHttpRequest();
+      xhr.open("GET","version.txt?_="+Date.now(),true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4 && xhr.status===200){
+          var v=(xhr.responseText||"").trim();
+          if(!v) return;
+          var old=localStorage.getItem(KEY);
+          try{ localStorage.setItem(KEY,v); }catch(e){}
+          if(old && old!==v){ location.reload(true); }
+        }
+      };
+      xhr.send();
+    }catch(e){}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <script src="js/load-guard.js?v=202608170037"></script>
+  <script src="js/load-guard.js?v=202608182210"></script>
   <title>阅读 · 摇摇又汞汞</title>
   <link rel="icon" href="images/favicon.svg" />
   <link rel="stylesheet" href="css/reader-guard.css" />
   <link rel="stylesheet" href="css/reader.css" />
-  <script src="js/static-api.js?v=202608170037"></script>
+  <script src="js/static-api.js?v=202608182210"></script>
 </head>
 <body class="reader-page" data-page="reader">
 
@@ -118,6 +138,6 @@
 
   <!-- 防盗：滚动水印 + 防复制 + 截图提示（读者页启用） -->
   <script src="js/reader-guard.js"></script>
-  <script src="js/reader.js?v=202608170037"></script>
+  <script src="js/reader.js?v=202608182210"></script>
 </body>
 </html>
