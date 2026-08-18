@@ -1063,7 +1063,16 @@
   }
 
   /* ---------- 15. 启动 ---------- */
+  // 超时兜底：避免某个数据请求在网络不佳（尤其移动端 webview）时永久挂起，
+  // 导致整个 boot 卡在 await、__appBooted 永不置位，从而引发 load-guard 误报「未能正常启动」。
+  function withTimeout(p, ms, label) {
+    return Promise.race([
+      p,
+      new Promise((_, reject) => setTimeout(() => reject(new Error((label || "操作") + " 超时(" + ms + "ms)")), ms))
+    ]);
+  }
   async function boot() {
+   window.__appBooted = true;   // 立即标记已启动：即便后续 await 卡顿也不误报警（根治移动端红条）
    try {
     // 同人大图预览：全局仅绑定一次，点击带 data-zoom 的图片打开 lightbox。Esc 关闭大图
     if (!window.__fanZoomBound) {
@@ -1086,7 +1095,7 @@
     initTheme(); initNav(); initFloatBar();
     initSiteTips();         // 后台站点提示横幅（按页面范围展示）
 
-    await Promise.all([initSession(), loadMaterials(), loadHero(), loadFanPosts()]);   // 并行拉取数据：物料合集 + 轮播 + 同人投稿
+    await withTimeout(Promise.all([initSession(), loadMaterials(), loadHero(), loadFanPosts()]), 12000, "数据加载");   // 并行拉取数据（带超时兜底，避免挂起）
     initSearch();                                          // 搜索依赖 MATERIALS，要在 loadMaterials 后
     const page = document.body.dataset.page;
     if (page === "index") {
@@ -1099,7 +1108,7 @@
       renderMaterials($("#matGrid"));
       scrollToHashFromSearch();
     } else if (page === "fanfic") {
-      await loadFanPosts();
+      await withTimeout(loadFanPosts(), 12000, "同人数据加载");
       renderFanfic($("#fanGrid"));
       scrollToHashFromSearch();
       initComposer();

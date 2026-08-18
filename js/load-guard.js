@@ -52,6 +52,14 @@
     el.appendChild(line);
   }
 
+  // 读取当前页面实际加载的 main.js 版本戳（HTML 里的 ?v=），用于红条上提示，方便用户反馈时区分「没刷到新版」还是「新版仍卡」
+  function currentMainVersion() {
+    var s = document.querySelector('script[src*="main.js"]');
+    if (!s) return "未知";
+    var m = (s.getAttribute("src") || "").match(/main\.js\?v=(\d+)/);
+    return m ? m[1] : "(无版本戳)";
+  }
+
   // 供 main.js 在启动出错时上报具体错误（便于用户反馈，而非笼统的「未能正常启动」）
   window.__reportBootError = function (err) {
     var msg = err && err.message ? err.message : String(err);
@@ -86,7 +94,7 @@
   function bootCheck() {
     if (window.__loadGuardResErr) return;                     // 资源错误已说明，避免重复
     if (window.__appBooted) return;
-    report("页面脚本未能正常启动，内容可能为空。请刷新页面，或在手机浏览器「地址栏锁图标 → 清除站点数据」后重试。", false);
+    report("页面脚本未能正常启动（当前脚本版本 v=" + currentMainVersion() + "）。请刷新页面，或在手机浏览器「地址栏锁图标 → 清除站点数据」后重试。", false);
   }
   if (document.readyState === "complete") setTimeout(bootCheck, BOOT_DELAY);
   else window.addEventListener("load", function () { setTimeout(bootCheck, BOOT_DELAY); });
