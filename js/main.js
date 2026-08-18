@@ -382,6 +382,17 @@
   /* ---------- 9. 懒加载 + 水印 ---------- */
   function initLazyAndWatermark() {
     const imgs = $$("img[data-src]");
+    // 退化：浏览器/webview 不支持 IntersectionObserver 时直接全部加载，
+    // 否则「new IntersectionObserver」会抛错，导致 renderFanfic(boot) 整个中断、
+    // 页面空白并触发 load-guard「未能正常启动」——这也是移动端内容为空的根因。
+    if (!("IntersectionObserver" in window)) {
+      imgs.forEach((img) => {
+        const src = img.dataset.src || "";
+        if (src) img.src = src;
+        img.classList.add("loaded");
+      });
+      return;
+    }
     const io = new IntersectionObserver((entries) => {
       entries.forEach((en) => {
         if (en.isIntersecting) {
@@ -401,7 +412,7 @@
       io.observe(img);
     });
 
-    // 查看原图切换已移除：所有图片默认显示水印（WM_TEXT），不再提供去水印入口
+    // 查看原图切换已移除：所有图片默认显示水印（WM_TEXT），不再提供去水敏入口
   }
 
   /* ---------- 10. 点赞（所有访客可用） ---------- */
@@ -1053,6 +1064,7 @@
 
   /* ---------- 15. 启动 ---------- */
   async function boot() {
+   try {
     // 同人大图预览：全局仅绑定一次，点击带 data-zoom 的图片打开 lightbox。Esc 关闭大图
     if (!window.__fanZoomBound) {
       window.__fanZoomBound = true;
@@ -1097,7 +1109,13 @@
     initLazyAndWatermark(); initReveal();
     // 兜底：极端情况下若 IO 未触发，定时强制显示，避免内容永久隐藏
     setTimeout(() => { $$(".reveal:not(.in)").forEach((e) => e.classList.add("in")); }, 1500);
-    window.__appBooted = true;   // 标记主脚本已启动，供 load-guard.js 启动自检（空白页定位）
+    } catch (err) {
+      // 真实错误暴露出来，便于定位（而不是默默空白）
+      try { if (window.__reportBootError) window.__reportBootError(err); else console.error("[boot] 启动出错：", err); } catch (_) {}
+    } finally {
+      // 无论如何都标记已启动，避免 load-guard 误报「未能正常启动」造成双重空白
+      window.__appBooted = true;   // 标记主脚本已启动，供 load-guard.js 启动自检（空白页定位）
+    }
   }
 
   window.__toast = toast; // 供同人音频试听等内联按钮调用
