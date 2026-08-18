@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <!-- auto-reload on deploy: 检测到 version.txt 变化则自动强刷，根治移动端缓存空白 -->
+  <script>
+  (function(){
+    try{
+      var KEY="_site_ver_";
+      var xhr=new XMLHttpRequest();
+      xhr.open("GET","version.txt?_="+Date.now(),true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4 && xhr.status===200){
+          var v=(xhr.responseText||"").trim();
+          if(!v) return;
+          var old=localStorage.getItem(KEY);
+          try{ localStorage.setItem(KEY,v); }catch(e){}
+          if(old && old!==v){ location.reload(true); }
+        }
+      };
+      xhr.send();
+    }catch(e){}
+  })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <script src="js/load-guard.js?v=202608182318"></script>
+  <title>同人创作 · 摇摇又汞汞</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode:"class", theme:{ extend:{ colors:{
+      mblue:{50:"#EEF2F6",100:"#D9E2EA",300:"#A7C0D8",500:"#7E9CB8",700:"#5C7A96",900:"#3E566B"},
+      morange:{100:"#F6E7D8",300:"#E8C3A0",500:"#D9A679",700:"#B97F4E"} } } } };
+  </script>
+  <link rel="stylesheet" href="css/style.css?v=202608182318" />
+  <link rel="stylesheet" href="css/editor.css" />
+  <script src="js/static-api.js?v=202608182318"></script>
+</head>
+<body class="m-bg m-text" data-page="editor">
+
+  <!-- 顶部栏（磨砂玻璃） -->
+  <header class="ed-topbar">
+    <div class="ed-top-inner">
+      <button id="btnSideToggle" class="ed-icon-btn ed-only-mobile" title="章节">☰</button>
+      <a class="brand" href="index.html"><span>摇摇又汞汞 · 创作</span></a>
+
+      <div class="ed-title-wrap">
+        <input id="edTitle" class="ed-title" placeholder="未命名作品" maxlength="120" />
+        <div id="tagChips" class="ed-tag-chips"></div>
+        <div class="ed-meta-row">
+          <input id="edAuthor" class="ed-author-input" placeholder="作者署名（可选）" maxlength="30" />
+          <select id="edPair" class="ed-serial-select" required>
+            <option value="" disabled selected>配对 *必选</option>
+            <option value="年上">年上</option>
+            <option value="年下">年下</option>
+            <option value="无差">无差</option>
+          </select>
+          <select id="edSerial" class="ed-serial-select">
+            <option value="single">短篇</option>
+            <option value="serial">连载中</option>
+            <option value="completed">已完结</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ed-top-actions">
+        <button id="btnTags" class="ed-pill" title="作品标签">🏷 标签</button>
+        <button id="btnPreview" class="ed-pill" title="阅读预览">👁 预览</button>
+        <button id="btnTheme" class="ed-pill" title="夜间 / 浅色切换">🌙</button>
+        <button id="btnLoginState" class="ed-pill" title="发布状态">✅ 可直接发布</button>
+        <button id="btnMore" class="ed-pill" title="更多">⋯</button>
+        <div id="moreMenu" class="ed-more-menu">
+          <button data-act="new">➕ 新建作品</button>
+          <button data-act="works">📚 作品列表</button>
+          <button data-act="import">📥 导入 TXT（仅自己文稿）</button>
+          <button data-act="export">📤 导出 TXT</button>
+          <button data-act="clean">🧹 清理多余空行</button>
+          <button data-act="format">✨ 排版优化</button>
+          <button data-act="publish" class="ed-menu-publish">📣 发布到同人专区</button>
+        </div>
+      </div>
+    </div>
+    <div id="saveStatus" class="ed-save-status">就绪</div>
+  </header>
+
+  <!-- 主体 -->
+  <main class="ed-main">
+    <!-- 侧边：章节管理 -->
+    <aside id="edSide" class="ed-side">
+      <div class="ed-side-head">
+        <span>章节</span>
+        <button id="btnAddChapter" class="ed-mini-btn" title="新建章节">＋</button>
+      </div>
+      <div id="chapterList" class="ed-chapter-list"></div>
+      <div class="ed-side-foot">
+        <button id="btnWorks" class="ed-pill full">📚 我的作品</button>
+        <p class="ed-side-tip">拖拽 ⠿ 可排序 · 👁 隐藏 · 🗑 删除</p>
+      </div>
+    </aside>
+    <div id="sideMask" class="ed-side-mask"></div>
+
+    <!-- 中间：编辑区 -->
+    <section class="ed-center">
+      <div class="ed-toolbar" id="edToolbar">
+        <button class="ed-tb" data-cmd="bold" title="加粗"><b>B</b></button>
+        <button class="ed-tb" data-cmd="italic" title="斜体"><i>I</i></button>
+        <span class="ed-tb-sep"></span>
+        <button class="ed-tb" data-cmd="h1" title="一级标题">H1</button>
+        <button class="ed-tb" data-cmd="h2" title="二级标题">H2</button>
+        <span class="ed-tb-sep"></span>
+        <button class="ed-tb" data-cmd="justifyLeft" title="居左对齐">⬱左</button>
+        <button class="ed-tb" data-cmd="justifyCenter" title="居中对齐">⬌中</button>
+        <button class="ed-tb" data-cmd="justifyRight" title="居右对齐">右⬰</button>
+        <button class="ed-tb" data-cmd="justifyFull" title="两端对齐">⬌齐⬌</button>
+        <span class="ed-tb-sep"></span>
+        <button class="ed-tb" data-cmd="indent" title="增加缩进">⇥</button>
+        <button class="ed-tb" data-cmd="outdent" title="减少缩进">⇤</button>
+        <button class="ed-tb" data-cmd="hr" title="分割线">―</button>
+        <span class="ed-tb-sep"></span>
+        <span class="ed-word"><span id="wordTotal">0</span> 字 · 选中 <span id="wordSel">0</span></span>
+      </div>
+      <div id="edEditor" class="ed-editor" contenteditable="true" spellcheck="false"></div>
+    </section>
+  </main>
+
+  <!-- 作品列表弹窗 -->
+  <div id="worksModal" class="modal-mask">
+    <div class="modal ed-works-modal">
+      <button class="close-x" data-close="worksModal">×</button>
+      <h3>我的作品</h3>
+      <div id="worksList" class="ed-works-list"></div>
+      <button id="btnNewWork" class="btn btn-blue" style="margin-top:14px;width:100%">＋ 新建空白作品</button>
+    </div>
+  </div>
+
+  <!-- 标签弹窗 -->
+  <div id="tagsModal" class="modal-mask">
+    <div class="modal ed-tags-modal">
+      <button class="close-x" data-close="tagsModal">×</button>
+      <h3>作品标签</h3>
+      <p class="m-text-soft" style="font-size:13px;margin:0 0 12px">点击卡片添加 / 取消，可多选。已选标签会显示在标题下方。</p>
+      <div id="tagGroups" class="ed-tag-groups"></div>
+      <div class="ed-custom-tag-row">
+        <input id="edCustomTag" class="ed-custom-tag-input" placeholder="输入自定义标签后按回车" maxlength="20" />
+        <button id="edAddCustomTag" class="ed-mini-btn" title="添加自定义标签">＋</button>
+      </div>
+      <button id="btnTagClose" class="btn btn-blue" style="margin-top:16px;width:100%">完成</button>
+    </div>
+  </div>
+
+  <!-- 阅读预览 -->
+  <div id="previewOverlay" class="ed-preview">
+    <div class="ed-preview-bar">
+      <span id="previewTitle" class="ed-preview-title">阅读预览</span>
+      <button id="btnExitPreview" class="ed-pill">✕ 退出预览</button>
+    </div>
+    <div id="previewContent" class="ed-preview-content"></div>
+  </div>
+
+  <input id="importFile" type="file" accept=".txt,text/plain" hidden />
+  <div id="toast" class="toast"></div>
+
+  <script src="js/editor.js"></script>
+</body>
+</html>

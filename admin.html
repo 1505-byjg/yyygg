@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <!-- auto-reload on deploy: 检测到 version.txt 变化则自动强刷，根治移动端缓存空白 -->
+  <script>
+  (function(){
+    try{
+      var KEY="_site_ver_";
+      var xhr=new XMLHttpRequest();
+      xhr.open("GET","version.txt?_="+Date.now(),true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4 && xhr.status===200){
+          var v=(xhr.responseText||"").trim();
+          if(!v) return;
+          var old=localStorage.getItem(KEY);
+          try{ localStorage.setItem(KEY,v); }catch(e){}
+          if(old && old!==v){ location.reload(true); }
+        }
+      };
+      xhr.send();
+    }catch(e){}
+  })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="js/load-guard.js?v=202608182318"></script>
+  <title>管理后台 · 摇摇又汞汞</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode:"class", theme:{ extend:{ colors:{
+      mblue:{50:"#EEF2F6",100:"#D9E2EA",300:"#A7C0D8",500:"#7E9CB8",700:"#5C7A96",900:"#3E566B"},
+      morange:{100:"#F6E7D8",300:"#E8C3A0",500:"#D9A679",700:"#B97F4E"} } } } };
+  </script>
+  <link rel="stylesheet" href="css/style.css?v=202608182318" />
+  <style>
+    .status-pending{color:var(--m-orange-700);background:var(--m-orange-100);padding:2px 10px;border-radius:999px;font-size:12px}
+    .status-ok{color:#2f7d4f;background:#E4F3E9;padding:2px 10px;border-radius:999px;font-size:12px}
+    .status-rej{color:#9B3B3B;background:#FBEAEA;padding:2px 10px;border-radius:999px;font-size:12px}
+    .status-ban{color:#9B3B3B;background:#FBEAEA;padding:2px 10px;border-radius:999px;font-size:12px}
+    .user-card{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;background:var(--bg-soft)}
+    .ans-row{font-size:13px;padding:4px 0;border-bottom:1px dashed var(--line)}
+    .grade-input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-top:8px;background:#fff;color:var(--text)}
+    .tab-bar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+    .tab-btn{padding:8px 16px;border:1px solid var(--line);border-radius:999px;background:var(--bg-soft);cursor:pointer;font-weight:600;color:var(--text-soft);font-size:14px}
+    .tab-btn.active{background:var(--m-blue-500);color:#fff;border-color:var(--m-blue-500)}
+    .role-badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;background:var(--m-orange-100);color:var(--m-orange-700);margin-left:6px}
+    .fp-tagchip{user-select:none;cursor:pointer;padding:5px 13px;border-radius:999px;font-size:13px;line-height:1.4;border:1px solid var(--line);background:var(--bg-soft);color:var(--text-soft);transition:.15s}
+    .fp-tagchip:hover{border-color:var(--m-blue-500);color:var(--m-blue-500)}
+    .fp-tagchip.on{background:var(--m-blue-500);border-color:var(--m-blue-500);color:#fff}
+    .perm-table{width:100%;border-collapse:collapse;margin-bottom:14px}
+    .perm-table th,.perm-table td{border:1px solid var(--line);padding:8px 10px;text-align:left;font-size:14px}
+    .perm-table th{background:var(--bg-soft)}
+    .perm-table td.c{text-align:center}
+    .q-edit{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--bg-soft)}
+    .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#3E566B;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+    .toast.show{opacity:1}
+    /* 同人图片多图上传：预览网格 */
+    .fp-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:4px}
+    .fp-thumb{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg-soft)}
+    .fp-thumb img{width:100%;height:84px;object-fit:cover;display:block}
+    .fp-thumb-name{font-size:11px;color:var(--text-soft);padding:4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .fp-thumb-acts{display:flex;gap:4px;padding:0 6px 6px;justify-content:space-between}
+    .fp-thumb-acts button{border:1px solid var(--line);background:var(--card);border-radius:6px;width:30px;height:26px;font-size:13px;cursor:pointer;color:var(--text-soft)}
+    .fp-thumb-acts button:disabled{opacity:.4;cursor:not-allowed}
+    .fp-thumb-del{color:#9B3B3B!important;border-color:#e3c2c2!important}
+    /* 物料上传表单分层 */
+    .form-group{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+    .form-group:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    .form-group > .fg-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px}
+    .form-group > .fg-title::before{content:"";width:4px;height:15px;border-radius:3px;background:var(--m-orange-500,#E8915B)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-group .field{display:flex;flex-direction:column;gap:5px}
+    .form-group .field > label{font-size:13px;font-weight:600;color:var(--text-soft)}
+    .form-group .field input,.form-group .field select,.form-group .field textarea{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text);font-size:14px;font-family:inherit}
+    .form-group .field textarea{resize:vertical;line-height:1.5}
+    .form-group .field .hint{font-size:12px;color:var(--text-soft);margin:2px 0 0}
+    @media (max-width:640px){ .grid2{grid-template-columns:1fr} }
+
+    /* ===== 后台卡片 / 图片查看（莫兰迪蓝橙） ===== */
+    .admin-users-layout{display:grid;grid-template-columns:248px 1fr;gap:22px;align-items:start;margin-top:2px}
+    .filter-side{position:sticky;top:calc(var(--nav-h) + 18px);background:var(--card);border:1px solid var(--line);border-radius:var(--radius-sm);padding:16px;box-shadow:var(--shadow)}
+    .filter-block{margin-bottom:14px}
+    .filter-block:last-child{margin-bottom:0}
+    .filter-label{display:block;font-size:12px;font-weight:700;color:var(--text-soft);letter-spacing:.04em;margin-bottom:8px}
+    .filter-search input{width:100%;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--bg-soft);color:var(--text);font-size:14px;outline:none;box-sizing:border-box;transition:border-color .2s var(--ease)}
+    .filter-search input:focus{border-color:var(--m-blue-500)}
+    .filter-pills{display:flex;flex-direction:column;gap:7px}
+    .f-pill{text-align:left;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text-soft);font-size:13px;font-weight:600;cursor:pointer;transition:.2s var(--ease)}
+    .f-pill:hover{border-color:var(--m-blue-300);color:var(--m-blue-700)}
+    .f-pill.active{background:var(--m-blue-500);border-color:var(--m-blue-500);color:#fff}
+    .filter-more{margin-top:2px;border-top:1px dashed var(--line);padding-top:12px}
+    .filter-more>summary{font-size:13px;font-weight:600;color:var(--text-soft);cursor:pointer;list-style:none;user-select:none;transition:color .2s var(--ease)}
+    .filter-more>summary::-webkit-details-marker{display:none}
+    .filter-more>summary::before{content:"▸ ";color:var(--m-blue-500);font-size:11px}
+    .filter-more[open]>summary::before{content:"▾ "}
+    .filter-more[open]>summary{color:var(--m-blue-700)}
+    .list-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;min-height:18px}
+    .user-list-col{min-width:0}
+
+    /* 用户卡片重设计：信息层级分明，次要文字弱化 */
+    .user-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px;box-shadow:var(--shadow);transition:box-shadow .3s var(--ease),transform .3s var(--ease)}
+    .user-card:hover{box-shadow:var(--shadow-h);transform:translateY(-2px)}
+    .uc-head{display:flex;align-items:center;gap:12px}
+    .uc-avatar{width:44px;height:44px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--m-blue-500),var(--m-blue-700));font-size:17px;line-height:1}
+    .uc-id{flex:1;min-width:0}
+    .uc-name{font-size:16px;font-weight:700;color:var(--text);line-height:1.2;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .uc-mail{font-size:12.5px;color:var(--text-soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .uc-meta{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;font-size:12px;color:var(--text-soft)}
+    .uc-meta b{color:var(--text);font-weight:600}
+    .uc-answers{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;max-height:240px;overflow:auto}
+    .uc-proof{margin-top:12px}
+    .uc-proof .ttl{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+    .uc-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+    .uc-actions .spacer{margin-left:auto}
+
+    /* 莫兰迪按钮（后台专用，蓝=正向，橙=警示/次级） */
+    .btn-approve{background:var(--m-blue-500);color:#fff;border:0}
+    .btn-approve:hover{background:var(--m-blue-700)}
+    .btn-reject{background:var(--m-orange-500);color:#fff;border:0}
+    .btn-reject:hover{background:var(--m-orange-700)}
+    .btn-orange{background:var(--m-orange-500);color:#fff}
+    .btn-orange:hover{background:var(--m-orange-700)}
+
+    @media (max-width:860px){
+      .admin-users-layout{grid-template-columns:1fr}
+      .filter-side{position:static;display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+      .filter-more{grid-column:1/-1}
+      #ufReset{grid-column:1/-1}
+    }
+    @media (max-width:520px){ .filter-side{grid-template-columns:1fr} }
+
+    /* 后台图片 · 点击查看大图 */
+    .zoomable-img{cursor:zoom-in;transition:filter .15s}
+    .zoomable-img:hover{filter:brightness(.96)}
+    .ad-mini-lb{position:fixed;inset:0;background:rgba(15,18,22,.86);display:none;align-items:center;justify-content:center;z-index:99999;cursor:zoom-out;padding:24px}
+    .ad-mini-lb.open{display:flex}
+    .ad-mini-lb img{max-width:92vw;max-height:90vh;border-radius:12px;box-shadow:0 12px 50px rgba(0,0,0,.55);background:#fff}
+    .ad-mini-lb .lb-close{position:fixed;top:18px;right:22px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1}
+  </style>
+  <script src="js/static-api.js?v=202608182318"></script>
+</head>
+<body class="m-bg m-text" data-page="admin">
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html"><img src="images/logo.svg" alt="logo" /><span>摇摇又汞汞</span></a>
+    </div>
+  </header>
+
+  <main style="margin-top:calc(var(--nav-h) + 24px);padding:0 16px 60px;max-width:900px;margin-left:auto;margin-right:auto">
+
+    <!-- 后台主体（纯公开演示：直接可用，无需登录） -->
+    <section id="panel">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="materials">物料管理</button>
+        <button class="tab-btn" data-tab="fanfic">同人专区管理</button>
+        <button class="tab-btn" data-tab="hero">轮播管理</button>
+        <button class="tab-btn" data-tab="announce">公告管理</button>
+        <button class="tab-btn" data-tab="rules">规则管理</button>
+        <button class="tab-btn" data-tab="tips">站点提示</button>
+        <a class="tab-btn tab-link" href="editor.html" target="_blank" rel="noopener">文档编辑器 ↗</a>
+      </div>
+
+
+
+
+      <!-- 标签页：轮播管理 -->
+      <div class="tab-panel" data-panel="hero" style="display:none">
+        <div class="section-head" style="margin-bottom:12px"><span class="bar"></span><h3>首页全屏轮播 Banner</h3><span class="more" id="heroMeta"></span></div>
+        <p class="m-text-soft" style="font-size:13px;margin-bottom:14px">
+          此处管理首页顶部的全屏轮播图。所有访客都能看到。建议尺寸 <strong>1920×600</strong> 或更大宽高比，每张 ≤ 12MB。支持 jpg/png/webp/gif。数量 1-10 张，顺序即为播放顺序。
+        </p>
+        <div id="heroList"></div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <button id="heroAdd" class="btn btn-ghost">+ 添加 banner</button>
+          <button id="heroSave" class="btn btn-blue">保存所有修改</button>
+          <button id="heroReset" class="btn btn-ghost">恢复默认 4 张</button>
+        </div>
+        <p class="m-text-soft" style="font-size:12px;margin-top:14px">💡 提示：每张 banner 有"图片 + 标题 + 副标题 + 可选链接"。点击"图片"框可选本地图片上传；"链接"留空则不跳转。修改后务必点"保存所有修改"才能生效。</p>
+      </div>
+
+      <!-- 标签页：物料管理 -->
+      <div class="tab-panel" data-panel="materials">
+        <div class="section-head" style="margin-bottom:12px"><span class="bar"></span><h3>物料合集管理</h3><span class="more" id="matCount"></span></div>
+        <p class="m-text-soft" style="font-size:13px;margin-bottom:14px">
+          在此添加/编辑/删除物料合集内容。<strong>封面</strong>支持本地上传（≤8MB）或填写外部图片 URL；修改后即时同步到 <code>/material.html</code>。
+        </p>
+        <div class="card" style="padding:18px;margin-bottom:18px">
+          <h4 id="matFormTitle" style="margin:0 0 14px">添加新物料</h4>
+
+          <!-- 层 1：基础信息 -->
+          <div class="form-group">
+            <div class="fg-title">基础信息</div>
+            <div class="grid2">
+              <div class="field"><label>分类</label>
+                <select id="matCat">
+                  <option value="采访">采访</option>
+                  <option value="节目">节目</option>
+                  <option value="商务">商务</option>
+                  <option value="直播">直播</option>
+                  <option value="互动">互动</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+              <div class="field"><label>来源 / 平台</label><input id="matSource" placeholder="如：官博 / B站 / 微博" /></div>
+              <div class="field" style="grid-column:1/-1"><label>标题 <span style="color:#9B3B3B">*</span></label><input id="matTitle" placeholder="物料标题" /></div>
+            </div>
+          </div>
+
+          <!-- 层 2：封面素材 -->
+          <div class="form-group">
+            <div class="fg-title">封面素材</div>
+            <div class="grid2">
+              <div class="field" style="grid-column:1/-1"><label>本地图片上传（≤8MB，优先使用）</label><input id="matCoverFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" /></div>
+              <div class="field" style="grid-column:1/-1"><label>封面外部图片 URL（可选，留空则用本地上传）</label><input id="matCover" placeholder="https://..." /></div>
+              <div class="field" style="grid-column:1/-1">
+                <label>当前封面预览</label>
+                <img id="matCoverPreview" style="max-width:140px;max-height:100px;border-radius:6px;border:1px solid var(--line);background:#f5f5f5;display:none" alt="封面预览" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 层 3：链接与发布信息 -->
+          <div class="form-group">
+            <div class="fg-title">链接与发布信息</div>
+            <div class="grid2">
+              <div class="field" style="grid-column:1/-1"><label>外部链接（点击物料跳转的 URL，留空则不显示跳转）</label><input id="matLink" placeholder="如 bilibili.com/video/BV1xx —— 可只填域名，系统自动补 https://" /><p class="hint">💡 支持简写：填 <code>www.bilibili.com/...</code> 或 <code>bilibili.com/...</code> 系统都会自动补 <code>https://</code>，无需手写。留空则物料不显示跳转按钮。</p></div>
+              <div class="field"><label>物料日期（选择年月，留空默认当天）</label><input id="matDate" type="month" /></div>
+              <div class="field"><label>作者 / 出处署名</label><input id="matBy" placeholder="如：@站务小星" /></div>
+            </div>
+          </div>
+
+          <!-- 层 4：描述 -->
+          <div class="form-group">
+            <div class="fg-title">描述</div>
+            <div class="field"><label>简要说明</label><textarea id="matDesc" rows="3" placeholder="简要说明"></textarea></div>
+          </div>
+
+          <!-- 层 5：衍生 -->
+          <div class="form-group">
+            <div class="fg-title">衍生（可选 · 物料合集下的细分内容，如系列采访 / 多段视频）</div>
+            <div id="matChildren"></div>
+            <button type="button" id="matAddChild" class="btn btn-ghost" style="margin-top:10px">+ 添加衍生</button>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button id="matSave" class="btn btn-blue">保存</button>
+            <button id="matReset" class="btn btn-ghost">清空 / 取消编辑</button>
+          </div>
+        </div>
+        <h4 style="margin:6px 0 10px">现有物料 <span class="m-text-soft" style="font-size:12px;font-weight:400">（点击「编辑」填充到上方表单）</span></h4>
+        <div id="matList"></div>
+      </div>
+
+      <!-- 标签页：公告管理 -->
+      <div class="tab-panel" data-panel="announce" style="display:none">
+        <div class="section-head" style="margin-bottom:12px"><span class="bar"></span><h3>公告管理</h3><span class="more" id="annCount"></span></div>
+        <p class="m-text-soft" style="font-size:13px;margin-bottom:14px">
+          在此发布站点公告，发布后即时同步到 <code>/index.html</code> 首页顶部公告区。支持「置顶」使其优先展示。
+        </p>
+        <div class="card" style="padding:18px;margin-bottom:18px">
+          <h4 style="margin:0 0 14px">发布新公告</h4>
+          <div class="form-group">
+            <div class="fg-title">公告内容</div>
+            <div class="grid2">
+              <div class="field" style="grid-column:1/-1"><label>标题</label><input id="annTitle" placeholder="如：站点维护通知 / 新功能上线" /></div>
+              <div class="field" style="grid-column:1/-1"><label>正文</label><textarea id="annContent" rows="4" placeholder="公告正文内容"></textarea></div>
+              <div class="field" style="grid-column:1/-1"><label>跳转链接（可选，留空则不显示跳转）</label><input id="annLink" placeholder="https://..." /></div>
+              <div class="field" style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="annPinned" style="width:auto" /> 置顶（优先展示在公告区最上方）</label></div>
+              <div class="field" style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="annPopup" style="width:auto" /> 设为弹窗公告（访客进首页自动弹出）</label></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button id="annSave" class="btn btn-blue">发布公告</button>
+            <button id="annCancel" class="btn btn-ghost" style="display:none">取消编辑</button>
+            <button id="annReset" class="btn btn-ghost">清空</button>
+          </div>
+        </div>
+        <h4 style="margin:6px 0 10px">现有公告 <span class="m-text-soft" style="font-size:12px;font-weight:400">（置顶优先，按发布时间倒序）</span></h4>
+        <div id="annList"></div>
+      </div>
+
+      <!-- 标签页：规则管理 -->
+      <div class="tab-panel" data-panel="rules" style="display:none">
+        <div class="section-head" style="margin-bottom:12px"><span class="bar"></span><h3>规则管理</h3><span class="more" id="ruleCount"></span></div>
+        <p class="m-text-soft" style="font-size:13px;margin-bottom:14px">
+          在此添加社区合规规则，发布后即时展示在 <code>/rule.html</code> 社区规则页（追加在基础规则之后）。可填写标题与正文，正文每行将作为一条要点展示。
+        </p>
+        <div class="card" style="padding:18px;margin-bottom:18px">
+          <h4 style="margin:0 0 14px">添加新规则</h4>
+          <div class="form-group">
+            <div class="fg-title">规则标题</div>
+            <div class="grid2">
+              <div class="field" style="grid-column:1/-1"><label>标题</label><input id="ruleTitle" placeholder="如：六、外部链接规范 / 举报奖励机制" /></div>
+              <div class="field" style="grid-column:1/-1"><label>正文（每行一条要点，多行自动分条）</label><textarea id="ruleContent" rows="4" placeholder="每条规则一行，例如：&#10;禁止发布任何站外引流二维码&#10;二改物料须保留原作者署名"></textarea></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button id="ruleSave" class="btn btn-blue">添加规则</button>
+            <button id="ruleReset" class="btn btn-ghost">清空</button>
+          </div>
+        </div>
+        <h4 style="margin:6px 0 10px">现有规则 <span class="m-text-soft" style="font-size:12px;font-weight:400">（全部规则，含社区规则页基础规则；可编辑、删除、调整顺序）</span></h4>
+        <div id="ruleList"></div>
+      </div>
+
+      <!-- 标签页：站点提示 -->
+      <div class="tab-panel" data-panel="tips" style="display:none">
+        <div class="section-head" style="margin-bottom:12px"><span class="bar"></span><h3>站点提示</h3><span class="more" id="tipCount"></span></div>
+        <p class="m-text-soft" style="font-size:13px;margin-bottom:14px">
+          发布轻量「前端提示」：以顶部横幅形式展示给访客，可手动关闭；关闭后本次不再出现（按提示记忆）。可指定出现在哪些页面。
+        </p>
+        <div class="card" style="padding:18px;margin-bottom:18px">
+          <h4 id="tipFormTitle" style="margin:0 0 14px">发布新提示</h4>
+          <div class="form-group">
+            <div class="fg-title">提示内容</div>
+            <div class="grid2">
+              <div class="field" style="grid-column:1/-1"><label>提示内容</label><textarea id="tipContent" rows="3" placeholder="如：近期服务器维护，上传可能延迟，请稍候～"></textarea></div>
+              <div class="field" style="grid-column:1/-1"><label>跳转链接（可选，留空则不显示跳转）</label><input id="tipLink" placeholder="https://..." /></div>
+              <div class="field" style="grid-column:1/-1">
+                <label>展示页面（可多选）</label>
+                <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px">
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="tip-page" value="all" checked style="width:auto" /> 全站</label>
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="tip-page" value="index" style="width:auto" /> 首页</label>
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="tip-page" value="material" style="width:auto" /> 物料页</label>
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="tip-page" value="fanfic" style="width:auto" /> 同人页</label>
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="tip-page" value="me" style="width:auto" /> 我的</label>
+                </div>
+              </div>
+              <div class="field" style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="tipActive" checked style="width:auto" /> 启用（关闭则前端不展示）</label></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button id="tipSave" class="btn btn-blue">发布提示</button>
+            <button id="tipReset" class="btn btn-ghost">清空</button>
+            <button id="tipCancel" class="btn btn-ghost" style="display:none">取消编辑</button>
+          </div>
+        </div>
+        <h4 style="margin:6px 0 10px">现有提示 <span class="m-text-soft" style="font-size:12px;font-weight:400">（按发布时间倒序）</span></h4>
+        <div id="tipList"></div>
+      </div>
+
+      <!-- 标签页：同人专区管理 -->
+      <div class="tab-panel" data-panel="fanfic" style="display:none">
+        <div class="section-head" style="margin-bottom:12px"><span class="bar"></span><h3>同人专区投稿管理</h3><span class="more" id="fpCount"></span></div>
+        <p class="m-text-soft" style="font-size:13px;margin-bottom:14px">
+          同人投稿现<strong>仅在此后台发布</strong>，前台页面已取消上传入口。支持<strong>图片 / 文章 / 视频</strong>三类；发布后即时同步到 <code>/fanfic.html</code>。长篇文章排版建议用右上角「文档编辑器 ↗」创作后一键发布。
+        </p>
+        <div class="card" style="padding:18px;margin-bottom:18px">
+          <h4 id="fpFormTitle" style="margin:0 0 14px">发布新投稿</h4>
+
+          <!-- 层 1：基础信息 -->
+          <div class="form-group">
+            <div class="fg-title">基础信息</div>
+            <div class="grid2">
+              <div class="field" style="grid-column:1/-1"><label>标题 <span style="color:#9B3B3B">*</span></label><input id="fpTitle" placeholder="作品标题" /></div>
+              <div class="field"><label>类型</label>
+                <select id="fpKind">
+                  <option value="image">图片</option>
+                  <option value="article" selected>文章</option>
+                </select>
+              </div>
+              <div class="field" id="fpPairField"><label>配对标签 <span style="color:#9B3B3B">*</span></label>
+                <select id="fpPair">
+                  <option value="年上">年上</option>
+                  <option value="年下">年下</option>
+                  <option value="无差" selected>无差</option>
+                  <option value="none">不展示</option>
+                </select>
+              </div>
+              <div class="field"><label>作者署名（可选，留空为「管理员」）</label><input id="fpAuthor" placeholder="如：@某位太太" /></div>
+              <div class="field" id="fpSerialField"><label>连载状态</label>
+                <select id="fpSerial">
+                  <option value="single" selected>短篇</option>
+                  <option value="serial">连载中</option>
+                  <option value="completed">已完结</option>
+                  <option value="none">不展示</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 层 2：标签设定 -->
+          <div class="form-group">
+            <div class="fg-title">标签设定</div>
+            <div class="field" style="grid-column:1/-1">
+              <label>标签（点击下方预设项快速添加，或手动补充，最多 20 个）</label>
+              <div id="fpTagPicker" style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0"></div>
+              <input id="fpTags" placeholder="如：甜文, HE, 校园（手动补充未列出的标签）" />
+            </div>
+          </div>
+
+          <!-- 层 3：内容素材 -->
+          <div class="form-group">
+            <div class="fg-title">内容素材</div>
+            <div class="field" style="grid-column:1/-1;display:none" id="fpFileField">
+              <label id="fpFileLabel">附件（类型「文章」无需附件）</label>
+              <input id="fpFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple disabled />
+              <p class="m-text-soft" style="font-size:12px;margin:6px 0 0">📎 图片 ≤10MB（png/jpg/webp/gif），可一次选多张（最多 12 张）；视频 ≤15MB（mp4/webm/mov），可上传本地文件或改用下方「外链」。<br><strong style="color:#9B3B3B">图片类投稿仅支持外链，本地图片上传已关闭（图片不在前台展示）。</strong></p>
+              <div id="fpFilePreview" style="margin-top:10px;display:none">
+                <div id="fpThumbs" class="fp-thumbs"></div>
+                <div id="fpFileSingle" style="display:none">
+                  <img id="fpFilePreviewImg" alt="预览" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--line);display:none;vertical-align:middle" />
+                  <span id="fpFilePreviewName" class="m-text-soft" style="font-size:12px;margin-left:8px;vertical-align:middle"></span>
+                  <button type="button" id="fpFileRemove" class="btn btn-ghost" style="margin-left:8px;padding:4px 10px;font-size:12px">移除</button>
+                </div>
+              </div>
+            </div>
+            <div class="field" style="grid-column:1/-1"><label>外链<span id="fpLinkReq" style="color:#9B3B3B;display:none"> *（图片类型必填）</span>（视频可贴 B站/抖音链接）</label><input id="fpLink" placeholder="https://... 可只填域名，系统自动补 https://" /></div>
+          </div>
+
+          <!-- 层 4：正文与简介 -->
+          <div class="form-group">
+            <div class="fg-title">正文与简介</div>
+            <div class="field" style="grid-column:1/-1" id="fpContentWrap"><label>正文（文章类，简单排版；长文建议用文档编辑器）</label><textarea id="fpContent" rows="6" placeholder="在此粘贴或撰写正文，换行会自动保留"></textarea></div>
+            <div class="field" style="grid-column:1/-1"><label>简介 / 说明</label><textarea id="fpDesc" rows="2" placeholder="作品简介"></textarea></div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button id="fpSave" class="btn btn-blue">发布</button>
+            <button id="fpReset" class="btn btn-ghost">清空 / 取消编辑</button>
+          </div>
+        </div>
+        <h4 style="margin:6px 0 10px">现有投稿 <span class="m-text-soft" style="font-size:12px;font-weight:400">（点击「编辑」填充到上方表单，编辑仅支持标题/作者/配对/标签/连载/简介/正文）</span></h4>
+        <div id="fpList"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => Array.from(document.querySelectorAll(s));
+    const api = (p, opt) => fetch(p, opt).then(r => r.json());
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    let toastTimer;
+    function toast(msg) {
+      let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; el.className = "toast"; document.body.appendChild(el); }
+      el.textContent = msg; el.className = "toast show";
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.className = "toast"), 2200);
+    }
+
+    // ===== 顶部集中声明（必须在初始化阶段调用的函数之前，避免 let/const 暂时性死区 TDZ） =====
+    let FP_EDITING = null;                        // 编辑中的投稿 id（null=发布模式）
+    let FP_FILE = null;                           // 当前附件（视频）：{dataUrl, cover?, isVideo, name?, size?}
+    let FP_FILES = [];                            // 图片多图数组：[{dataUrl, name}]
+    const FP_PRESET_TAGS = ["甜文","虐文","HE","BE","校园","现代","古风","日常","破镜重圆","AU","清水","车","年上甜","年下甜","群像","OOC","双向暗恋","失忆梗"];
+
+    function switchTab(name) {
+      $$(".tab-btn:not(.tab-link)").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+      $$(".tab-panel").forEach((p) => (p.style.display = p.dataset.panel === name ? "block" : "none"));
+      if (name === "materials") loadMaterials();
+      else if (name === "fanfic") loadFanposts();
+      else if (name === "hero") loadHeroAdmin();
+      else if (name === "announce") loadAnnouncements();
+      else if (name === "rules") loadRules();
+      else if (name === "tips") loadTips();
+    }
+    $$(".tab-btn:not(.tab-link)").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+    renderFpTagPicker();
+
+    function roleBadge(r) { return r ? `<span class="role-badge">${esc(r)}</span>` : ""; }
+
+
+
+
+    // ---------- 物料合集管理 ----------
+    let MAT_EDITING = null;   // 当前编辑中的物料 id（null 表示添加模式）
+    let MAT_EDIT_ORIG_DATE = "";  // 编辑中原物料的完整日期，用于未改月份时保留「日」精度
+    function matReset() {
+      MAT_EDITING = null;
+      MAT_EDIT_ORIG_DATE = "";
+      ["#matCat","#matSource","#matTitle","#matCover","#matLink","#matBy","#matDate","#matDesc"].forEach((s) => { const el = $(s); if (el) el.value = ""; });
+      const cf = $("#matCoverFile"); if (cf) cf.value = "";
+      const pv = $("#matCoverPreview"); if (pv) { pv.src = ""; pv.style.display = "none"; }
+      const t = $("#matFormTitle"); if (t) t.textContent = "添加新物料";
+      renderMatChildren([]);
+    }
+    let MAT_CHILDREN = [];
+    function renderMatChildren(list) {
+      MAT_CHILDREN = Array.isArray(list) ? list.slice() : [];
+      const wrap = $("#matChildren");
+      if (!wrap) return;
+      if (!MAT_CHILDREN.length) { wrap.innerHTML = '<p class="m-text-soft" style="font-size:12px;margin:0">暂无衍生，点「+ 添加衍生」新增。</p>'; return; }
+      wrap.innerHTML = MAT_CHILDREN.map((c, i) => {
+        const links = (c.links && c.links.length) ? c.links : (c.link ? [c.link] : [""]);
+        return `
+        <div class="mat-child-row" data-i="${i}" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <b style="min-width:24px;color:var(--m-blue-700);text-align:center">${i + 1}</b>
+            <input class="mc-title" placeholder="衍生标题" value="${esc(c.title || '')}" style="flex:1;box-sizing:border-box" />
+            <button type="button" class="btn btn-ghost mc-up" style="padding:7px 10px" data-i="${i}" ${i === 0 ? "disabled" : ""} title="上移">↑</button>
+            <button type="button" class="btn btn-ghost mc-down" style="padding:7px 10px" data-i="${i}" ${i === MAT_CHILDREN.length - 1 ? "disabled" : ""} title="下移">↓</button>
+            <button type="button" class="btn btn-ghost mc-del" style="color:#9B3B3B;padding:7px 10px;white-space:nowrap">删除</button>
+          </div>
+          <div class="mc-links" data-i="${i}">
+            ${links.map((l, j) => `
+              <div class="mc-link-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+                <input class="mc-link" placeholder="链接 https://" value="${esc(l)}" style="flex:1;box-sizing:border-box" data-j="${j}" />
+                <button type="button" class="btn btn-ghost mc-link-del" style="padding:6px 9px;color:#9B3B3B" data-j="${j}">×</button>
+              </div>`).join('')}
+            <button type="button" class="btn btn-ghost mc-add-link" style="font-size:12px;padding:4px 10px" data-i="${i}">+ 添加链接</button>
+          </div>
+          <input class="mc-thumb" placeholder="缩略图 URL（可选）" value="${esc(c.thumb || '')}" style="width:100%;box-sizing:border-box;margin-top:6px" />
+        </div>`;
+      }).join('');
+
+      // 输入即时写回模型（不重渲染，避免失焦）
+      wrap.querySelectorAll(".mat-child-row").forEach((row) => {
+        const i = Number(row.dataset.i);
+        row.querySelector(".mc-title").addEventListener("input", (e) => { MAT_CHILDREN[i].title = e.target.value; });
+        row.querySelector(".mc-thumb").addEventListener("input", (e) => { MAT_CHILDREN[i].thumb = e.target.value; });
+        row.querySelectorAll(".mc-link").forEach((inp) => {
+          inp.addEventListener("input", (e) => {
+            const j = Number(inp.dataset.j);
+            (MAT_CHILDREN[i].links = MAT_CHILDREN[i].links || [])[j] = e.target.value;
+          });
+        });
+      });
+      wrap.querySelectorAll(".mc-del").forEach((b) => b.addEventListener("click", () => {
+        MAT_CHILDREN.splice(Number(b.closest(".mat-child-row").dataset.i), 1);
+        renderMatChildren(MAT_CHILDREN);
+      }));
+      wrap.querySelectorAll(".mc-up").forEach((b) => b.addEventListener("click", () => moveChild(Number(b.dataset.i), -1)));
+      wrap.querySelectorAll(".mc-down").forEach((b) => b.addEventListener("click", () => moveChild(Number(b.dataset.i), 1)));
+      wrap.querySelectorAll(".mc-link-del").forEach((b) => b.addEventListener("click", () => {
+        const i = Number(b.closest(".mat-child-row").dataset.i), j = Number(b.dataset.j);
+        if (!MAT_CHILDREN[i].links) MAT_CHILDREN[i].links = (MAT_CHILDREN[i].link ? [MAT_CHILDREN[i].link] : [""]);
+        MAT_CHILDREN[i].links.splice(j, 1);
+        if (!MAT_CHILDREN[i].links.length) MAT_CHILDREN[i].links = [""];
+        renderMatChildren(MAT_CHILDREN);
+      }));
+      wrap.querySelectorAll(".mc-add-link").forEach((b) => b.addEventListener("click", () => {
+        const i = Number(b.dataset.i);
+        if (!MAT_CHILDREN[i].links) MAT_CHILDREN[i].links = (MAT_CHILDREN[i].link ? [MAT_CHILDREN[i].link] : [""]);
+        MAT_CHILDREN[i].links.push("");
+        renderMatChildren(MAT_CHILDREN);
+      }));
+    }
+    function moveChild(i, dir) {
+      const to = i + dir;
+      if (to < 0 || to >= MAT_CHILDREN.length) return;
+      const tmp = MAT_CHILDREN[i]; MAT_CHILDREN[i] = MAT_CHILDREN[to]; MAT_CHILDREN[to] = tmp;
+      renderMatChildren(MAT_CHILDREN);
+    }
+    $("#matAddChild") && $("#matAddChild").addEventListener("click", () => { MAT_CHILDREN.push({ title: "", links: [""], thumb: "" }); renderMatChildren(MAT_CHILDREN); });
+    function matPreview(src) {
+      const pv = $("#matCoverPreview");
+      if (!pv) return;
+      if (src) { pv.src = src; pv.style.display = "block"; } else { pv.src = ""; pv.style.display = "none"; }
+    }
+    async function loadMaterials() {
+      const d = await api("/admin/materials");
+      const list = d.materials || [];
+      $("#matCount").textContent = `共 ${list.length} 条`;
+      const wrap = $("#matList");
+      if (!list.length) { wrap.innerHTML = '<p class="m-text-soft">暂无物料，点上方「+ 添加新物料」开始。</p>'; return; }
+      wrap.innerHTML = list.map((m) => `
+        <div class="card" style="padding:14px;margin-bottom:10px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <img src="${esc(m.cover || '')}" alt="封面" style="width:88px;height:64px;object-fit:cover;border-radius:6px;background:#f5f5f5;border:1px solid var(--line)" onerror="this.style.display='none'" />
+          <div style="flex:1;min-width:200px">
+            <div><strong>${esc(m.title)}</strong> <span class="m-text-soft" style="font-size:12px">${esc(m.cat || '')} · ${esc(m.source || '')}</span></div>
+            <div class="m-text-soft" style="font-size:12px;margin-top:4px">${m.link ? `<a href="${esc(m.link)}" target="_blank" rel="noopener">${esc(m.link)}</a>` : "（无外链）"}</div>
+            <div class="m-text-soft" style="font-size:12px;margin-top:2px">${esc(m.desc || '').slice(0, 80)}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" data-mat-edit="${m.id}">编辑</button>
+            <button class="btn btn-ghost" data-mat-del="${m.id}" style="color:#9B3B3B">删除</button>
+          </div>
+        </div>`).join("");
+      // 绑定编辑/删除
+      $$("[data-mat-edit]").forEach((b) => b.addEventListener("click", () => matEdit(b.dataset.matEdit)));
+      $$("[data-mat-del]").forEach((b) => b.addEventListener("click", () => matDel(b.dataset.matDel)));
+    }
+    function matEdit(id) {
+      api("/admin/materials").then((d) => {
+        const m = (d.materials || []).find((x) => x.id === id);
+        if (!m) return;
+        MAT_EDITING = id;
+        $("#matCat").value = m.cat || "采访";
+        $("#matSource").value = m.source || "";
+        $("#matTitle").value = m.title || "";
+        $("#matCover").value = m.cover || "";
+        $("#matLink").value = m.link || "";
+        $("#matBy").value = m.by || "";
+        MAT_EDIT_ORIG_DATE = m.date || "";
+        $("#matDate").value = MAT_EDIT_ORIG_DATE.slice(0, 7);
+        $("#matDesc").value = m.desc || "";
+        const cf = $("#matCoverFile"); if (cf) cf.value = "";
+        matPreview(m.cover);
+        renderMatChildren(m.children || []);
+        $("#matFormTitle").textContent = "编辑物料（id: " + id.slice(0, 8) + "）";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+    async function matDel(id) {
+      if (!confirm("确认删除此物料？封面文件也会一起删除。")) return;
+      const r = await api(`/admin/materials/${id}`, { method: "DELETE" });
+      if (r.ok) { toast("已删除"); matReset(); loadMaterials(); }
+      else alert(r.msg || "删除失败");
+    }
+    async function matSave() {
+      const title = $("#matTitle").value.trim();
+      if (!title) { alert("标题必填"); return; }
+      const body = {
+        cat: $("#matCat").value,
+        source: $("#matSource").value.trim(),
+        title,
+        cover: $("#matCover").value.trim(),
+        link: $("#matLink").value.trim(),
+        by: $("#matBy").value.trim(),
+        desc: $("#matDesc").value.trim(),
+      };
+      const childRows = $$("#matChildren .mat-child-row");
+      const children = childRows.map((row) => {
+        const title = row.querySelector(".mc-title").value.trim();
+        const links = Array.from(row.querySelectorAll(".mc-link")).map((i) => i.value.trim()).filter(Boolean);
+        const thumb = row.querySelector(".mc-thumb").value.trim();
+        return { title, links, thumb };
+      }).filter((c) => c.title || (c.links && c.links.length));
+      if (children.length) body.children = children;
+      const cf = $("#matCoverFile");
+      if (cf && cf.files && cf.files[0]) {
+        try {
+          body.coverDataUrl = await compressImageFile(cf.files[0], 1280, 0.85);  // 压缩后存 MySQL（持久化，容器重建不丢）
+        } catch (e) { alert("封面处理失败，请换一张"); return; }
+      }
+      // 物料日期：新增或改了月份用年月；编辑旧物料且未改月份则保留原完整日期（避免丢失「日」）
+      const dateVal = $("#matDate").value.trim();
+      if (dateVal) {
+        if (MAT_EDITING && dateVal === MAT_EDIT_ORIG_DATE.slice(0, 7) && MAT_EDIT_ORIG_DATE.length === 10) {
+          body.date = MAT_EDIT_ORIG_DATE;
+        } else {
+          body.date = dateVal;
+        }
+      }
+      const url = MAT_EDITING ? `/admin/materials/${MAT_EDITING}` : "/admin/materials";
+      const method = MAT_EDITING ? "PUT" : "POST";
+      const r = await api(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (r.ok) { toast(MAT_EDITING ? "已更新" : "已添加"); matReset(); loadMaterials(); }
+      else alert(r.msg || "保存失败");
+    }
+    // 封面 URL 实时预览
+    document.addEventListener("input", (e) => { if (e.target && e.target.id === "matCover") matPreview(e.target.value.trim()); });
+    // 初始绑定
+    $("#matSave") && $("#matSave").addEventListener("click", matSave);
+
+    /* ===== 公告管理 ===== */
+    let editingAnnId = null;
+    function resetAnnForm() {
+      editingAnnId = null;
+      $("#annTitle").value = "";
+      $("#annContent").value = "";
+      $("#annLink").value = "";
+      $("#annPinned").checked = false;
+      $("#annPopup").checked = false;
+      $("#annSave").textContent = "发布公告";
+      const c = $("#annCancel"); if (c) c.style.display = "none";
+    }
+    async function loadAnnouncements() {
+      const d = await api("/admin/announcements");
+      const list = d.announcements || [];
+      $("#annCount").textContent = `共 ${list.length} 条`;
+      const wrap = $("#annList");
+      if (!list.length) { wrap.innerHTML = '<p class="m-text-soft">暂无公告，发布后将展示在首页。</p>'; return; }
+      const fmt = (iso) => { try { return new Date(iso).toLocaleString("zh-CN", { hour12: false }); } catch { return iso || ""; } };
+      wrap.innerHTML = list.map((a) => `
+        <div class="card" style="padding:14px;margin-bottom:10px">
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div><strong>${esc(a.title || "(无标题)")}</strong>${a.pinned ? ' <span class="ann-pin-tag">置顶</span>' : ""}${a.popup ? ' <span class="ann-popup-tag">弹窗</span>' : ""}</div>
+              <div class="m-text-soft" style="font-size:12px;margin-top:4px">${esc(a.content || "").replace(/\n/g, "<br>")}</div>
+              ${a.link ? `<div class="m-text-soft" style="font-size:12px;margin-top:4px"><a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(a.link)}</a></div>` : ""}
+              <div class="m-text-soft" style="font-size:12px;margin-top:2px">${fmt(a.createdAt)}</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" data-ann-edit="${a.id}">编辑</button>
+              <button class="btn btn-ghost" data-ann-popup="${a.id}" data-popup-on="${a.popup ? 1 : 0}">${a.popup ? "取消弹窗" : "设为弹窗"}</button>
+              <button class="btn btn-ghost" data-ann-del="${a.id}" style="color:#9B3B3B">删除</button>
+            </div>
+          </div>
+        </div>`).join("");
+      $$("[data-ann-edit]").forEach((b) => b.addEventListener("click", () => annEdit(b.dataset.annEdit)));
+      $$("[data-ann-del]").forEach((b) => b.addEventListener("click", () => annDel(b.dataset.annDel)));
+      $$("[data-ann-popup]").forEach((b) => b.addEventListener("click", () => annTogglePopup(b.dataset.annPopup, b.dataset.popupOn === "1")));
+    }
+    async function annEdit(id) {
+      const d = await api("/admin/announcements");
+      const a = (d.announcements || []).find((x) => x.id === id);
+      if (!a) { alert("未找到该公告"); return; }
+      editingAnnId = id;
+      $("#annTitle").value = a.title || "";
+      $("#annContent").value = a.content || "";
+      $("#annLink").value = a.link || "";
+      $("#annPinned").checked = !!a.pinned;
+      $("#annPopup").checked = !!a.popup;
+      $("#annSave").textContent = "保存修改";
+      const c = $("#annCancel"); if (c) c.style.display = "";
+      $("#annTitle").focus();
+      toast("正在编辑公告，修改后点「保存修改」");
+    }
+    async function annSave() {
+      const title = $("#annTitle").value.trim();
+      const content = $("#annContent").value.trim();
+      if (!title && !content) { alert("标题或正文至少填一项"); return; }
+      const body = {
+        title,
+        content,
+        link: $("#annLink").value.trim(),
+        pinned: $("#annPinned").checked === true,
+        popup: $("#annPopup").checked === true,
+      };
+      let r;
+      if (editingAnnId) {
+        r = await api(`/admin/announcements/${editingAnnId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      } else {
+        r = await api("/admin/announcements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      }
+      if (r.ok) { toast(editingAnnId ? "已保存修改" : "已发布公告"); resetAnnForm(); loadAnnouncements(); }
+      else alert(r.msg || r.error || "操作失败");
+    }
+    async function annDel(id) {
+      if (!confirm("确认删除此公告？")) return;
+      const r = await api(`/admin/announcements/${id}`, { method: "DELETE" });
+      if (r.ok) { toast("已删除"); loadAnnouncements(); }
+      else alert(r.msg || r.error || "删除失败");
+    }
+    async function annTogglePopup(id, isOn) {
+      const r = await api(`/admin/announcements/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ popup: !isOn }) });
+      if (r.ok) { toast(isOn ? "已取消弹窗" : "已设为弹窗公告"); loadAnnouncements(); }
+      else alert(r.msg || r.error || "操作失败");
+    }
+    $("#annSave") && $("#annSave").addEventListener("click", annSave);
+    $("#annCancel") && $("#annCancel").addEventListener("click", resetAnnForm);
+    $("#annReset") && $("#annReset").addEventListener("click", resetAnnForm);
+
+    /* ===== 规则管理 ===== */
+    let RULES_CACHE = [];
+    async function loadRules() {
+      const d = await api("/admin/rules");
+      const list = d.rules || [];
+      RULES_CACHE = list;
+      $("#ruleCount").textContent = `共 ${list.length} 条`;
+      const wrap = $("#ruleList");
+      if (!list.length) { wrap.innerHTML = '<p class="m-text-soft">暂无规则。</p>'; return; }
+      const fmt = (iso) => { try { return new Date(iso).toLocaleString("zh-CN", { hour12: false }); } catch { return iso || ""; } };
+      wrap.innerHTML = list.map((r, idx) => {
+        const lines = (r.content || "").split("\n").map((s) => s.trim()).filter(Boolean);
+        const bodyHtml = lines.length > 1
+          ? `<ul class="m-text-soft" style="line-height:1.9;padding-left:20px;margin:6px 0 0">${lines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>`
+          : `<p class="m-text-soft" style="line-height:1.8;margin:6px 0 0">${esc(lines[0] || "")}</p>`;
+        const upDisabled = idx === 0 ? "disabled style=\"opacity:.4;cursor:not-allowed\"" : "";
+        const downDisabled = idx === list.length - 1 ? "disabled style=\"opacity:.4;cursor:not-allowed\"" : "";
+        const themeTag = (r.theme && r.theme !== "default") ? ` <span class="m-text-soft" style="font-size:11px">[${esc(r.theme)}]</span>` : "";
+        return `<div class="card" style="padding:14px;margin-bottom:10px">
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div><strong>${esc(r.title || "(无标题)")}</strong>${themeTag}</div>
+              ${bodyHtml}
+              <div class="m-text-soft" style="font-size:12px;margin-top:6px">${fmt(r.createdAt)}</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost" data-rule-up="${esc(r.id)}" ${upDisabled} title="上移">↑</button>
+              <button class="btn btn-ghost" data-rule-down="${esc(r.id)}" ${downDisabled} title="下移">↓</button>
+              <button class="btn btn-ghost" data-rule-edit="${esc(r.id)}">编辑</button>
+              <button class="btn btn-ghost" data-rule-del="${esc(r.id)}" style="color:#9B3B3B">删除</button>
+            </div>
+          </div>
+          <div class="rule-edit-box" id="ruleEdit_${esc(r.id)}" style="display:none;margin-top:10px"></div>
+        </div>`;
+      }).join("");
+      $$("[data-rule-del]").forEach((b) => b.addEventListener("click", () => ruleDel(b.dataset.ruleDel)));
+      $$("[data-rule-up]").forEach((b) => b.addEventListener("click", () => moveRule(b.dataset.ruleUp, -1)));
+      $$("[data-rule-down]").forEach((b) => b.addEventListener("click", () => moveRule(b.dataset.ruleDown, 1)));
+      $$("[data-rule-edit]").forEach((b) => b.addEventListener("click", () => ruleEdit(b.dataset.ruleEdit)));
+    }
+    async function moveRule(id, dir) {
+      const d = await api("/admin/rules");
+      const list = d.rules || [];
+      const idx = list.findIndex((x) => x.id === id);
+      if (idx < 0) return;
+      const ni = idx + dir;
+      if (ni < 0 || ni >= list.length) return;
+      const t = list[idx]; list[idx] = list[ni]; list[ni] = t;
+      const r = await api("/admin/rules", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rules: list }) });
+      if (r.ok) loadRules();
+      else alert(r.msg || "排序失败");
+    }
+    function ruleEdit(id) {
+      const item = RULES_CACHE.find((x) => x.id === id);
+      if (!item) return;
+      const box = document.getElementById("ruleEdit_" + id);
+      box.style.display = "block";
+      box.innerHTML = `
+        <div class="field" style="margin-bottom:8px"><label>标题</label><input id="re_title_${id}" value="${esc(item.title || "")}" /></div>
+        <div class="field" style="margin-bottom:8px"><label>正文（每行一条要点）</label><textarea id="re_content_${id}" rows="4" style="width:100%">${esc(item.content || "")}</textarea></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-blue" id="re_save_${id}">保存</button>
+          <button class="btn btn-ghost" id="re_cancel_${id}">取消</button>
+        </div>`;
+      document.getElementById("re_cancel_" + id).addEventListener("click", () => { box.style.display = "none"; box.innerHTML = ""; });
+      document.getElementById("re_save_" + id).addEventListener("click", async () => {
+        const title = document.getElementById("re_title_" + id).value.trim();
+        const content = document.getElementById("re_content_" + id).value.trim();
+        if (!title && !content) { alert("标题或内容至少填一项"); return; }
+        const r = await api(`/admin/rules/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, content }) });
+        if (r.ok) { box.style.display = "none"; toast("已保存"); loadRules(); }
+        else alert(r.msg || "保存失败");
+      });
+    }
+    async function ruleSave() {
+      const title = $("#ruleTitle").value.trim();
+      const content = $("#ruleContent").value.trim();
+      if (!title && !content) { alert("标题或内容至少填一项"); return; }
+      const r = await api("/admin/rules", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, content }) });
+      if (r.ok) { toast("已添加规则"); $("#ruleTitle").value = ""; $("#ruleContent").value = ""; loadRules(); }
+      else alert(r.msg || "添加失败");
+    }
+    async function ruleDel(id) {
+      if (!confirm("确认删除此规则？该规则将从社区规则页移除。")) return;
+      const r = await api(`/admin/rules/${id}`, { method: "DELETE" });
+      if (r.ok) { toast("已删除"); loadRules(); }
+      else alert(r.msg || "删除失败");
+    }
+    $("#ruleSave") && $("#ruleSave").addEventListener("click", ruleSave);
+    $("#ruleReset") && $("#ruleReset").addEventListener("click", () => { $("#ruleTitle").value = ""; $("#ruleContent").value = ""; });
+
+    /* ===== 站点提示管理 ===== */
+    const TIP_PAGES = { all: "全站", index: "首页", material: "物料页", fanfic: "同人页", me: "我的" };
+    let TIP_EDITING = null;
+    function tipResetForm() {
+      TIP_EDITING = null;
+      $("#tipContent").value = "";
+      $("#tipLink").value = "";
+      $("#tipActive").checked = true;
+      $$(".tip-page").forEach((c) => { c.checked = (c.value === "all"); });
+      const ft = $("#tipFormTitle"); if (ft) ft.textContent = "发布新提示";
+      const b = $("#tipSave"); if (b) b.textContent = "发布提示";
+      const c = $("#tipCancel"); if (c) c.style.display = "none";
+    }
+    async function loadTips() {
+      const d = await api("/admin/tips");
+      const list = d.tips || [];
+      $("#tipCount").textContent = `共 ${list.length} 条`;
+      const wrap = $("#tipList");
+      if (!list.length) { wrap.innerHTML = '<p class="m-text-soft">暂无提示，发布后将展示在指定页面的顶部横幅。</p>'; return; }
+      const fmt = (iso) => { try { return new Date(iso).toLocaleString("zh-CN", { hour12: false }); } catch { return iso || ""; } };
+      wrap.innerHTML = list.map((t) => `
+        <div class="card" style="padding:14px;margin-bottom:10px">
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div><strong>${esc(t.content || "(空)")}</strong>${t.active === false ? ' <span class="ann-popup-tag" style="background:#9a9a9a">已停用</span>' : ""}</div>
+              ${t.link ? `<div class="m-text-soft" style="font-size:12px;margin-top:4px"><a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.link)}</a></div>` : ""}
+              <div class="m-text-soft" style="font-size:12px;margin-top:4px">展示页面：${(t.pages && t.pages.length ? t.pages : ["all"]).map((p) => TIP_PAGES[p] || p).join("、")} · ${fmt(t.createdAt)}</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" data-tip-edit="${t.id}">编辑</button>
+              <button class="btn btn-ghost" data-tip-toggle="${t.id}" data-on="${t.active === false ? 0 : 1}">${t.active === false ? "启用" : "停用"}</button>
+              <button class="btn btn-ghost" data-tip-del="${t.id}" style="color:#9B3B3B">删除</button>
+            </div>
+          </div>
+        </div>`).join("");
+      $$("[data-tip-del]").forEach((b) => b.addEventListener("click", () => tipDel(b.dataset.tipDel)));
+      $$("[data-tip-toggle]").forEach((b) => b.addEventListener("click", () => tipToggle(b.dataset.tipToggle, b.dataset.on === "1")));
+      $$("[data-tip-edit]").forEach((b) => b.addEventListener("click", () => tipEdit(b.dataset.tipEdit)));
+    }
+    function collectTipPages() {
+      const checked = $$(".tip-page:checked").map((c) => c.value);
+      return checked.includes("all") ? ["all"] : (checked.length ? checked : ["all"]);
+    }
+    async function tipEdit(id) {
+      const d = await api("/admin/tips");
+      const t = (d.tips || []).find((x) => x.id === id);
+      if (!t) return;
+      TIP_EDITING = id;
+      $("#tipContent").value = t.content || "";
+      $("#tipLink").value = t.link || "";
+      $("#tipActive").checked = t.active !== false;
+      $$(".tip-page").forEach((c) => { c.checked = ((t.pages && t.pages.length ? t.pages : ["all"]).includes(c.value)); });
+      const ft = $("#tipFormTitle"); if (ft) ft.textContent = "编辑提示（id: " + id.slice(0, 8) + "）";
+      const b = $("#tipSave"); if (b) b.textContent = "保存修改";
+      const c = $("#tipCancel"); if (c) c.style.display = "inline-block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    async function tipSave() {
+      const content = $("#tipContent").value.trim();
+      if (!content) { alert("提示内容必填"); return; }
+      const body = {
+        content,
+        link: $("#tipLink").value.trim(),
+        pages: collectTipPages(),
+        active: $("#tipActive").checked !== false,
+      };
+      let r;
+      if (TIP_EDITING) {
+        r = await api(`/admin/tips/${TIP_EDITING}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      } else {
+        r = await api("/admin/tips", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      }
+      if (r.ok) { toast(TIP_EDITING ? "已保存修改" : "已发布提示"); tipResetForm(); loadTips(); }
+      else alert(r.msg || "保存失败");
+    }
+    async function tipDel(id) {
+      if (!confirm("确认删除此提示？")) return;
+      const r = await api(`/admin/tips/${id}`, { method: "DELETE" });
+      if (r.ok) { toast("已删除"); loadTips(); }
+      else alert(r.msg || "删除失败");
+    }
+    async function tipToggle(id, isOn) {
+      const r = await api(`/admin/tips/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ active: !isOn }) });
+      if (r.ok) { toast(isOn ? "已停用" : "已启用"); loadTips(); }
+      else alert(r.msg || "操作失败");
+    }
+    $("#tipSave") && $("#tipSave").addEventListener("click", tipSave);
+    $("#tipReset") && $("#tipReset").addEventListener("click", tipResetForm);
+    $("#tipCancel") && $("#tipCancel").addEventListener("click", tipResetForm);
+
+    /* ===== 同人专区投稿管理 ===== */
+    // 读文件为 dataURL（视频原始 base64）
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onerror = () => reject(new Error("read"));
+        r.onload = () => resolve(r.result);
+        r.readAsDataURL(file);
+      });
+    }
+    // 从视频抽取首帧海报（jpeg dataURL，最长边 ≤640）；失败返回 ""
+    function extractVideoPoster(file) {
+      return new Promise((resolve) => {
+        let url = "";
+        try {
+          url = URL.createObjectURL(file);
+          const v = document.createElement("video");
+          v.preload = "metadata"; v.muted = true; v.playsInline = true; v.src = url;
+          const cleanup = () => { try { URL.revokeObjectURL(url); } catch {} };
+          const cap = () => {
+            try {
+              const w = v.videoWidth || 320, h = v.videoHeight || 180;
+              const scale = Math.min(1, 640 / Math.max(w, h));
+              const cv = document.createElement("canvas");
+              cv.width = Math.max(1, Math.round(w * scale));
+              cv.height = Math.max(1, Math.round(h * scale));
+              cv.getContext("2d").drawImage(v, 0, 0, cv.width, cv.height);
+              const data = cv.toDataURL("image/jpeg", 0.8);
+              cleanup(); resolve(data);
+            } catch { cleanup(); resolve(""); }
+          };
+          v.addEventListener("loadeddata", () => {
+            try {
+              v.currentTime = Math.min(0.5, (v.duration || 1) / 3);
+              v.addEventListener("seeked", cap, { once: true });
+              setTimeout(cap, 800);
+            } catch { cap(); }
+          }, { once: true });
+          v.addEventListener("error", () => { cleanup(); resolve(""); }, { once: true });
+          setTimeout(() => { cleanup(); resolve(""); }, 4000);
+        } catch { if (url) { try { URL.revokeObjectURL(url); } catch {} } resolve(""); }
+      });
+    }
+    // 文章无插图时由标题自动生成封面（居中标题 + 连载状态药丸）
+    function fpRoundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function generateTitleCover(title, author, pair, serial, hidePair, hideSerial) {
+      const W = 800, H = 400;
+      const cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext("2d");
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, "#efe7dd"); grad.addColorStop(1, "#dcd0c4");
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "rgba(217,166,121,0.16)";
+      ctx.beginPath(); ctx.arc(W * 0.84, H * 0.20, 96, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(126,156,184,0.13)";
+      ctx.beginPath(); ctx.arc(W * 0.16, H * 0.84, 130, 0, Math.PI * 2); ctx.fill();
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      // 顶部：连载状态药丸 + 配对小标（并排居中）；hideSerial/hidePair 为真时跳过对应绘制
+      const isSerial = (serial === true || serial === "serial");
+      const isDone = (serial === "completed");
+      const serialLabel = isSerial ? "连载中" : isDone ? "已完结" : "短篇";
+      const pillFont = '600 22px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.font = pillFont;
+      const padX = 26, pillH = 40, pillY = 52;
+      const showPill = !hideSerial;
+      const showPair = !hidePair;
+      const pillW = showPill ? (ctx.measureText(serialLabel).width + padX * 2) : 0;
+      const pairSmall = String(pair || "无差").slice(0, 12);
+      const pairFont = '500 19px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.font = pairFont;
+      const pairW = showPair ? ctx.measureText(pairSmall).width : 0;
+      const gap = 14;
+      const groupW = (showPill ? pillW : 0) + (showPill && showPair ? gap : 0) + (showPair ? pairW : 0);
+      const gx = (W - groupW) / 2;
+      // 状态药丸
+      if (showPill) {
+        fpRoundRect(ctx, gx, pillY, pillW, pillH, pillH / 2);
+        ctx.fillStyle = isSerial ? "rgba(217,166,121,0.94)" : isDone ? "rgba(94,122,150,0.94)" : "rgba(150,140,130,0.85)";
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.font = pillFont;
+        ctx.fillText(serialLabel, gx + pillW / 2, pillY + pillH / 2 + 1);
+      }
+      // 配对小标（药丸右侧）——加粗
+      if (showPair) {
+        const pairFontBold = '700 20px "PingFang SC","Microsoft YaHei",sans-serif';
+        ctx.font = pairFontBold;
+        ctx.fillStyle = "rgba(74,100,130,0.95)";
+        ctx.fillText(pairSmall, gx + (showPill ? pillW + gap : 0) + pairW / 2, pillY + pillH / 2 + 1);
+      }
+      // 题目（标题）：大号，最多 2 行，居中于中上部
+      ctx.fillStyle = "#3e3a34";
+      ctx.font = '700 46px "PingFang SC","Microsoft YaHei",sans-serif';
+      const maxW = W - 120, maxLines = 2, lineH = 60;
+      let line = "", lines = [];
+      const text = String(title || "未命名作品");
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ctx.measureText(line + ch).width > maxW) {
+          lines.push(line); line = ch;
+          if (lines.length >= maxLines - 1) { lines.push(text.slice(i)); break; }
+        } else { line += ch; }
+      }
+      if (lines.length < maxLines) lines.push(line);
+      const titleTop = 160;
+      lines.slice(0, maxLines).forEach((ln, i) => ctx.fillText(ln, W / 2, titleTop + i * lineH + lineH / 2));
+      // 作者名（居中）
+      const authorText = String(author || "佚名").slice(0, 18);
+      ctx.fillStyle = "rgba(94,122,150,0.95)";
+      ctx.font = '500 26px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillText(authorText, W / 2, 282);
+      return cv.toDataURL("image/jpeg", 0.9);
+    }
+
+    const serialLabelOf = (s) => s === "serial" ? "连载中" : s === "completed" ? "已完结" : "短篇";
+
+    // ===== 同人标签：预设可点选 + 自定义补充（FP_PRESET_TAGS 已在脚本顶部声明） =====
+    function renderFpTagPicker() {
+      const box = $("#fpTagPicker"); if (!box) return;
+      box.innerHTML = FP_PRESET_TAGS.map((t) => `<span class="fp-tagchip" data-tag="${esc(t)}">${esc(t)}</span>`).join("");
+      box.querySelectorAll(".fp-tagchip").forEach((c) => {
+        c.addEventListener("click", () => c.classList.toggle("on"));
+      });
+    }
+    // 合并「已点选预设」与「文本框手动输入」，去重、最多 20 个
+    function fpSelectedTags() {
+      const picked = [...document.querySelectorAll("#fpTagPicker .fp-tagchip.on")].map((c) => c.dataset.tag.trim());
+      const typed = ($("#fpTags").value || "").split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+      const merged = [];
+      [...picked, ...typed].forEach((t) => { if (t && !merged.includes(t)) merged.push(t); });
+      return merged.slice(0, 20);
+    }
+    // 回填：让预设中存在的标签点亮，其余放进文本框
+    function fpSetTags(tags) {
+      const set = new Set((tags || []).map((t) => t.trim()).filter(Boolean));
+      document.querySelectorAll("#fpTagPicker .fp-tagchip").forEach((c) => {
+        c.classList.toggle("on", set.has(c.dataset.tag));
+        set.delete(c.dataset.tag);
+      });
+      $("#fpTags").value = [...set].join(", ");
+    }
+
+    const kindLabelOf = (k) => k === "image" ? "图片" : k === "video" ? "视频" : "文章";
+
+    function fpClearFile() {
+      FP_FILE = null; FP_FILES = [];
+      const inp = $("#fpFile"); if (inp) inp.value = "";
+      const pv = $("#fpFilePreview"); if (pv) pv.style.display = "none";
+      const thumbs = $("#fpThumbs"); if (thumbs) thumbs.innerHTML = "";
+      const im = $("#fpFilePreviewImg"); if (im) { im.src = ""; im.style.display = "none"; }
+      const nm = $("#fpFilePreviewName"); if (nm) nm.textContent = "";
+    }
+    function fpReset() {
+      FP_EDITING = null;
+      ["#fpTitle","#fpAuthor","#fpTags","#fpLink","#fpDesc","#fpContent"].forEach((s) => { const el = $(s); if (el) el.value = ""; });
+      document.querySelectorAll("#fpTagPicker .fp-tagchip.on").forEach((c) => c.classList.remove("on"));
+      $("#fpKind").value = "article"; $("#fpPair").value = "无差"; $("#fpSerial").value = "single";
+      fpClearFile();
+      fpSyncKindUI();
+      $("#fpFormTitle").textContent = "发布新投稿";
+      $("#fpSave").textContent = "发布";
+    }
+    // 类型切换：控制附件可用性、正文显隐、文件 accept
+    function fpSyncKindUI() {
+      const k = $("#fpKind").value;
+      const inp = $("#fpFile"), label = $("#fpFileLabel"), cw = $("#fpContentWrap");
+      const fileField = $("#fpFileField"), linkReq = $("#fpLinkReq");
+      if (fileField) fileField.style.display = (k === "video") ? "block" : "none";  // 图片/文章均隐藏本地上传
+      if (inp) {
+        inp.accept = k === "image" ? "image/png,image/jpeg,image/webp,image/gif"
+          : k === "video" ? "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" : "";
+        inp.multiple = (k === "image");   // 图片支持多图
+        inp.disabled = (k !== "video");   // 图片改纯外链，禁用本地上传（仅 video 保留上传入口）
+      }
+      if (label) label.textContent = k === "image" ? "图片不展示，请直接填写下方外链"
+        : k === "video" ? "附件（视频 ≤15MB，或改用外链）" : "附件（类型「文章」无需附件）";
+      if (linkReq) linkReq.style.display = (k === "image") ? "inline" : "none";
+      if (cw) cw.style.display = k === "article" ? "block" : "none";
+      // 配对标签、连载状态对所有类型（图片 / 视频 / 文章）均展示
+      const pairField = $("#fpPairField"), serialField = $("#fpSerialField");
+      if (pairField) pairField.style.display = "block";
+      if (serialField) serialField.style.display = "block";
+      // 切换类型时若已选文件与新类型不符则清空
+      if (FP_FILE) fpClearFile();
+    }
+
+    async function loadFanposts() {
+      let list = [];
+      try { const d = await api("/admin/fanposts"); list = d.posts || []; }
+      catch { toast("投稿加载失败，请稍后重试"); }
+      $("#fpCount").textContent = `共 ${list.length} 条`;
+      const wrap = $("#fpList");
+      if (!list.length) { wrap.innerHTML = '<p class="m-text-soft">暂无投稿，用上方表单发布第一条。</p>'; return; }
+      wrap.innerHTML = list.map((p) => {
+        const thumb = p.kind === "video" ? (p.cover || "") : (p.file || p.cover || "");
+        const tags = (p.tags || []).map((t) => `<span class="role-badge">${esc(t)}</span>`).join("");
+        return `
+        <div class="card" style="padding:14px;margin-bottom:10px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <img src="${esc(thumb)}" alt="封面" style="width:88px;height:64px;object-fit:cover;border-radius:6px;background:#f5f5f5;border:1px solid var(--line)" onerror="this.style.display='none'" />
+          <div style="flex:1;min-width:200px">
+            <div><strong>${esc(p.title)}</strong> <span class="m-text-soft" style="font-size:12px">${kindLabelOf(p.kind)} · ${esc(p.pair || '')} · ${esc(p.author || '')}</span></div>
+            <div class="m-text-soft" style="font-size:12px;margin-top:4px">📅 ${esc(p.date || '')} ${p.serial ? '· 连载' : ''}${p.link ? ' · <a href="'+esc(p.link)+'" target="_blank" rel="noopener">外链</a>' : ''}</div>
+            <div style="margin-top:4px">${tags}</div>
+            <div class="m-text-soft" style="font-size:12px;margin-top:2px">${esc(p.desc || '').slice(0, 80)}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" data-fp-edit="${p.id}">编辑</button>
+            <button class="btn btn-ghost" data-fp-del="${p.id}" style="color:#9B3B3B">删除</button>
+          </div>
+        </div>`;
+      }).join("");
+      wrap.querySelectorAll("[data-fp-edit]").forEach((b) => b.addEventListener("click", () => fpEdit(b.dataset.fpEdit)));
+      wrap.querySelectorAll("[data-fp-del]").forEach((b) => b.addEventListener("click", () => fpDel(b.dataset.fpDel)));
+    }
+
+    async function fpEdit(id) {
+      const d = await api("/admin/fanposts").catch(() => ({}));
+      const p = (d.posts || []).find((x) => x.id === id);
+      if (!p) return;
+      FP_EDITING = id;
+      $("#fpTitle").value = p.title || "";
+      $("#fpKind").value = p.kind || "article";
+      $("#fpPair").value = p.hidePair ? "none" : (["年上","年下","无差"].includes(p.pair) ? p.pair : "无差");
+      $("#fpAuthor").value = p.author && p.author !== "管理员" ? p.author : "";
+      $("#fpSerial").value = p.hideSerial ? "none" : (p.serial ? "serial" : "single");
+      $("#fpTags").value = "";
+      fpSetTags(p.tags || []);
+      $("#fpLink").value = p.link || "";
+      $("#fpDesc").value = p.desc || "";
+      $("#fpContent").value = (p.content || "").replace(/<h2 class="post-ch-title">.*?<\/h2>/g, "").replace(/<[^>]+>/g, "");
+      fpClearFile();
+      fpSyncKindUI();
+      $("#fpFormTitle").textContent = "编辑投稿（id: " + id.slice(0, 8) + "）· 附件不可换，仅改文字信息";
+      $("#fpSave").textContent = "保存修改";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function fpDel(id) {
+      if (!confirm("确认删除此投稿？相关图片/视频附件也会一并删除。")) return;
+      const r = await api("/admin/fanposts/" + encodeURIComponent(id), { method: "DELETE" });
+      if (r.ok) { toast("已删除"); if (FP_EDITING === id) fpReset(); loadFanposts(); }
+      else alert(r.msg || "删除失败");
+    }
+
+    async function fpSave() {
+      const title = $("#fpTitle").value.trim();
+      if (!title) { alert("标题必填"); return; }
+      const kind = $("#fpKind").value;
+      const pairVal = $("#fpPair").value;
+      const hidePair = pairVal === "none";
+      const pair = hidePair ? "" : pairVal;   // 「不展示」→ 空串，卡片不渲染配对标签
+      const author = $("#fpAuthor").value.trim();
+      const serialSel = $("#fpSerial").value;
+      const hideSerial = serialSel === "none";
+      const serial = hideSerial ? false : (serialSel === "serial");
+      const tags = fpSelectedTags();
+      const link = $("#fpLink").value.trim();
+      const desc = $("#fpDesc").value.trim();
+      const contentRaw = $("#fpContent").value.trim();
+
+      // ===== 编辑模式：仅 PUT 文字信息 =====
+      if (FP_EDITING) {
+        const body = { title, pair, authorName: author, tags, serial, hidePair, hideSerial, desc };
+        if (kind === "article") body.content = contentRaw ? contentRaw.split(/\n{2,}/).map((para) => "<p>" + esc(para).replace(/\n/g, "<br>") + "</p>").join("") : undefined;
+        const r = await api("/admin/fanposts/" + encodeURIComponent(FP_EDITING), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if (r.ok) { toast("已保存修改"); fpReset(); loadFanposts(); }
+        else alert(r.msg || "保存失败");
+        return;
+      }
+
+      // ===== 发布模式 =====
+      if (kind === "video" && !link && !(FP_FILE && FP_FILE.isVideo)) { alert("「视频」类型请上传本地视频，或填写外链"); return; }
+      if (kind === "article" && (FP_FILE || FP_FILES.length)) { alert("「文章」类型无需附件"); return; }
+      if (kind === "image" && !link) { alert("「图片」类型请填写外链（图片不在前台展示，仅以链接卡片形式发布）"); return; }
+      $("#fpSave").disabled = true;
+      try {
+        const body = { title, kind, pair, desc, link, tags, authorName: author, serial, hidePair, hideSerial };
+        if (kind === "image" && FP_FILES.length) body.files = FP_FILES.map((x) => ({ dataUrl: x.dataUrl }));
+        if (kind === "video" && FP_FILE && FP_FILE.isVideo) {
+          body.file = { dataUrl: FP_FILE.dataUrl };
+          if (FP_FILE.cover) body.cover = FP_FILE.cover;
+        }
+        if (kind === "article") {
+          if (contentRaw) body.content = contentRaw.split(/\n{2,}/).map((para) => "<p>" + esc(para).replace(/\n/g, "<br>") + "</p>").join("");
+          // 文章无插图：用标题自动生成封面
+          body.cover = generateTitleCover(title, author, pair, serialSel, hidePair, hideSerial);
+        }
+        const r = await api("/admin/fanposts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if (r.ok) { toast("投稿发布成功 ✨"); fpReset(); loadFanposts(); }
+        else alert(r.msg || "发布失败");
+      } catch { alert("网络错误，发布失败"); }
+      $("#fpSave").disabled = false;
+    }
+
+    // 附件选择处理
+    function renderFpPreviews() {
+      const pv = $("#fpFilePreview"), thumbs = $("#fpThumbs"), single = $("#fpFileSingle");
+      const k = $("#fpKind").value;
+      if (k === "image") {
+        if (!FP_FILES.length) { pv.style.display = "none"; return; }
+        pv.style.display = "block"; single.style.display = "none"; thumbs.style.display = "grid";
+        thumbs.innerHTML = FP_FILES.map((x, i) => `
+          <div class="fp-thumb">
+            <img src="${x.dataUrl}" alt="${esc(x.name)}" />
+            <div class="fp-thumb-name" title="${esc(x.name)}">${esc(x.name)}</div>
+            <div class="fp-thumb-acts">
+              <button type="button" data-act="up" data-i="${i}" ${i === 0 ? "disabled" : ""}>↑</button>
+              <button type="button" data-act="down" data-i="${i}" ${i === FP_FILES.length - 1 ? "disabled" : ""}>↓</button>
+              <button type="button" data-act="del" data-i="${i}" class="fp-thumb-del">✕</button>
+            </div>
+          </div>`).join("");
+        thumbs.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => {
+          const i = parseInt(b.dataset.i, 10), act = b.dataset.act;
+          if (act === "del") FP_FILES.splice(i, 1);
+          else if (act === "up" && i > 0) { const t = FP_FILES[i - 1]; FP_FILES[i - 1] = FP_FILES[i]; FP_FILES[i] = t; }
+          else if (act === "down" && i < FP_FILES.length - 1) { const t = FP_FILES[i + 1]; FP_FILES[i + 1] = FP_FILES[i]; FP_FILES[i] = t; }
+          renderFpPreviews();
+        }));
+      } else if (k === "video" && FP_FILE) {
+        pv.style.display = "block"; thumbs.style.display = "none"; single.style.display = "block";
+        const im = $("#fpFilePreviewImg"), nm = $("#fpFilePreviewName");
+        if (FP_FILE.cover) { im.src = FP_FILE.cover; im.style.display = "block"; } else { im.src = ""; im.style.display = "none"; }
+        nm.textContent = "🎬 " + (FP_FILE.name || "视频") + (FP_FILE.size ? "（" + (FP_FILE.size / 1024 / 1024).toFixed(1) + "MB）" : "");
+      } else {
+        pv.style.display = "none";
+      }
+    }
+    $("#fpFile") && $("#fpFile").addEventListener("change", async () => {
+      const inp = $("#fpFile");
+      const files = inp.files ? Array.from(inp.files) : [];
+      const kind = $("#fpKind").value;
+      if (!files.length) { if (kind !== "image") fpClearFile(); return; }
+      if (kind === "image") {
+        for (const f of files) {
+          if (!f.type.startsWith("image/")) { toast("「" + f.name + "」不是图片，已跳过"); continue; }
+          if (f.size > 10 * 1024 * 1024) { toast("「" + f.name + "」超过 10MB，已跳过"); continue; }
+          try {
+            const dataUrl = await compressImageFile(f, 1600, 0.85);
+            FP_FILES.push({ dataUrl, name: f.name });
+          } catch { toast("「" + f.name + "」处理失败，已跳过"); }
+        }
+        inp.value = "";   // 清空以便继续追加更多图片
+        renderFpPreviews();
+      } else if (kind === "video") {
+        const f = files[0];
+        const okType = f.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(f.name);
+        if (!okType) { toast("请选择视频文件（mp4/webm/mov）"); fpClearFile(); return; }
+        if (f.size > 15 * 1024 * 1024) { toast("视频不能超过 15MB"); fpClearFile(); return; }
+        try {
+          toast("正在处理视频…");
+          const dataUrl = await fileToDataUrl(f);
+          const cover = await extractVideoPoster(f);
+          FP_FILE = { dataUrl, cover, isVideo: true, name: f.name, size: f.size };
+          renderFpPreviews();
+        } catch { toast("视频处理失败"); fpClearFile(); }
+      } else { toast("当前类型无需附件"); fpClearFile(); }
+    });
+    $("#fpFileRemove") && $("#fpFileRemove").addEventListener("click", fpClearFile);
+    $("#fpKind") && $("#fpKind").addEventListener("change", fpSyncKindUI);
+    $("#fpSave") && $("#fpSave").addEventListener("click", fpSave);
+    $("#fpReset") && $("#fpReset").addEventListener("click", fpReset);
+
+    /* ===== 轮播 Banner 管理 ===== */
+    const HERO_DEFAULT = { items: [
+      { id: "default-1", image: "images/banner1.svg", title: "山海之间 · 官方舞台", subtitle: "2024 巡演 · 修图精选", link: "material.html" },
+      { id: "default-2", image: "images/banner2.svg", title: "光影剧照 · 角色封神", subtitle: "影视代表作 · 高清壁纸", link: "material.html" },
+      { id: "default-3", image: "images/banner3.svg", title: "品牌代言 · 质感大片", subtitle: "商务合作 · 成套素材", link: "material.html" },
+      { id: "default-4", image: "images/banner4.svg", title: "治愈系壁纸 · 收藏", subtitle: "手机 / 桌面 · 免费下载", link: "material.html" },
+    ]};
+    let HERO_DRAFT = [];
+    const heroList = $("#heroList");
+    const heroMeta = $("#heroMeta");
+    function renderHeroList() {
+      if (!heroList) return;
+      if (HERO_DRAFT.length === 0) { heroList.innerHTML = '<p class="m-text-soft">暂无 banner，点击下方「+ 添加 banner」开始</p>'; return; }
+      heroList.innerHTML = HERO_DRAFT.map((it, i) => `
+        <div class="card" style="padding:14px;margin-bottom:10px;display:grid;grid-template-columns:120px 1fr auto;gap:14px;align-items:start" data-i="${i}">
+          <div>
+            <img src="${esc(it.image || '')}" style="width:120px;height:72px;object-fit:cover;border-radius:8px;background:#eee;display:block" />
+            <input type="file" accept="image/*" data-fld="imageFile" style="margin-top:6px;font-size:11px;width:120px" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div><label style="font-size:12px">图片 URL（选本地文件上传则自动覆盖此项）</label><input data-fld="image" value="${esc(it.image || '')}" placeholder="https://... 或 /uploads/banners/xxx.jpg" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" /></div>
+            <div><label style="font-size:12px">标题（≤30 字符）</label><input data-fld="title" value="${esc(it.title || '')}" maxlength="30" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" /></div>
+            <div><label style="font-size:12px">副标题（≤60 字符）</label><input data-fld="subtitle" value="${esc(it.subtitle || '')}" maxlength="60" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" /></div>
+            <div><label style="font-size:12px">链接（可选，留空不跳转）</label><input data-fld="link" value="${esc(it.link || '')}" placeholder="如 material.html 或 https://..." style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" /></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button data-act="up" data-i="${i}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px" ${i === 0 ? "disabled" : ""}>↑</button>
+            <button data-act="down" data-i="${i}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px" ${i === HERO_DRAFT.length - 1 ? "disabled" : ""}>↓</button>
+            <button data-act="del" data-i="${i}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:#9B3B3B">删除</button>
+          </div>
+        </div>`).join("");
+      // 绑定编辑事件
+      $$("#heroList [data-fld]").forEach(el => {
+        el.addEventListener("input", (e) => {
+          const card = e.target.closest("[data-i]");
+          const i = parseInt(card.dataset.i);
+          const f = e.target.dataset.fld;
+          if (f === "imageFile") return;   // 文件单独处理
+          HERO_DRAFT[i][f] = e.target.value;
+        });
+        el.addEventListener("change", async (e) => {
+          if (e.target.dataset.fld !== "imageFile") return;
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          if (f.size > 12 * 1024 * 1024) { toast("图片过大（≤12MB）", true); e.target.value = ""; return; }
+          try {
+            const dataUrl = await compressImageFile(f, 1920, 0.85);
+            const card = e.target.closest("[data-i]");
+            const i = parseInt(card.dataset.i);
+            HERO_DRAFT[i].imageDataUrl = dataUrl;   // 提交时由后端以 base64 存入 MySQL（持久化，容器重建不丢）
+            HERO_DRAFT[i].image = dataUrl;           // 预览
+            renderHeroList();
+            toast("图片已压缩就绪，点「保存所有修改」生效");
+          } catch (err) {
+            toast("图片处理失败，请换一张", true);
+          }
+          e.target.value = "";
+        });
+      });
+      $$("#heroList [data-act]").forEach(b => {
+        b.addEventListener("click", () => {
+          const i = parseInt(b.dataset.i);
+          if (b.dataset.act === "del") { HERO_DRAFT.splice(i, 1); renderHeroList(); }
+          else if (b.dataset.act === "up" && i > 0) { [HERO_DRAFT[i-1], HERO_DRAFT[i]] = [HERO_DRAFT[i], HERO_DRAFT[i-1]]; renderHeroList(); }
+          else if (b.dataset.act === "down" && i < HERO_DRAFT.length - 1) { [HERO_DRAFT[i+1], HERO_DRAFT[i]] = [HERO_DRAFT[i], HERO_DRAFT[i+1]]; renderHeroList(); }
+        });
+      });
+    }
+    // 把本地图片压缩为 jpg base64（最大边 maxEdge，质量 q），控制体积以便存入数据库
+    function compressImageFile(file, maxEdge, q) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("read"));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("decode"));
+          img.onload = () => {
+            let { width, height } = img;
+            const scale = Math.min(1, maxEdge / Math.max(width, height));
+            const w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
+            const canvas = document.createElement("canvas");
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            try { resolve(canvas.toDataURL("image/jpeg", q)); }
+            catch (e) { reject(e); }
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function loadHeroAdmin() {
+      try {
+        const r = await fetch("/admin/hero");
+        const d = await r.json();
+        HERO_DRAFT = JSON.parse(JSON.stringify(d.items || []));   // 深拷贝
+        if (heroMeta) heroMeta.textContent = d.updatedAt ? "最近修改：" + new Date(d.updatedAt).toLocaleString("zh-CN") + " · 共 " + HERO_DRAFT.length + " 张" : "（默认）· 共 " + HERO_DRAFT.length + " 张";
+        renderHeroList();
+      } catch (e) { toast("轮播加载失败", true); }
+    }
+    $("#heroAdd") && $("#heroAdd").addEventListener("click", () => {
+      if (HERO_DRAFT.length >= 10) { toast("最多 10 张 banner", true); return; }
+      HERO_DRAFT.push({ id: "new-" + Date.now(), image: "", title: "新 banner", subtitle: "副标题", link: "" });
+      renderHeroList();
+    });
+    $("#heroSave") && $("#heroSave").addEventListener("click", async () => {
+      // 校验
+      for (let i = 0; i < HERO_DRAFT.length; i++) {
+        const it = HERO_DRAFT[i];
+        if (!it.image) { toast("第 " + (i+1) + " 张缺少图片", true); return; }
+        if (!it.title) { toast("第 " + (i+1) + " 张缺少标题", true); return; }
+        if (it.title.length > 30) { toast("第 " + (i+1) + " 张标题过长", true); return; }
+        if (it.subtitle.length > 60) { toast("第 " + (i+1) + " 张副标题过长", true); return; }
+      }
+      const payload = { items: HERO_DRAFT };
+      const r = await api("/admin/hero", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (r.ok) { toast("轮播已保存，刷新首页即可看到 ✨"); loadHeroAdmin(); }
+      else toast(r.msg || "保存失败", true);
+    });
+    $("#heroReset") && $("#heroReset").addEventListener("click", () => {
+      if (!confirm("确定要恢复系统默认 4 张 banner 吗？当前所有修改会丢失。")) return;
+      HERO_DRAFT = JSON.parse(JSON.stringify(HERO_DEFAULT.items));
+      renderHeroList();
+      toast("已恢复默认，点击「保存所有修改」生效");
+    });
+
+    $("#matReset") && $("#matReset").addEventListener("click", matReset);
+    matReset();
+
+    // 纯公开演示：后台直接加载，无需登录
+
+    // 后台图片点击查看大图（lightbox，动态创建遮罩）
+    (function () {
+      let lb = document.getElementById("adMiniLb");
+      if (!lb) {
+        lb = document.createElement("div");
+        lb.className = "ad-mini-lb";
+        lb.id = "adMiniLb";
+        lb.innerHTML = '<div class="lb-close" id="adMiniLbClose" title="关闭">×</div><img alt="大图预览" />';
+        document.body.appendChild(lb);
+      }
+      const lbImg = lb.querySelector("img");
+      const open = (src) => { if (!src) return; lbImg.src = src; lb.classList.add("open"); };
+      const close = () => { lb.classList.remove("open"); lbImg.src = ""; };
+      document.addEventListener("click", (e) => {
+        const t = e.target.closest(".zoomable-img");
+        if (t) { e.preventDefault(); open(t.getAttribute("src")); return; }
+        if (e.target === lb || e.target.closest(".lb-close")) close();
+      });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+    })();
+  </script>
+</body>
+</html>

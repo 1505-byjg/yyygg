@@ -23,7 +23,7 @@
     const n = esc(name || "");
     if (!n) return "";
     const h = safeHref(url);
-    const xp = "index.html?author=" + encodeURIComponent(name);
+    const xp = "fanfic.html?author=" + encodeURIComponent(name);
     const link = '<a class="author-filter" href="' + esc(xp) + '" title="查看 ' + n + ' 的全部作品">' + n + '</a>';
     const ext = h ? ' <a class="author-link" href="' + esc(h) + '" target="_blank" rel="noopener noreferrer" title="找到 ' + n + ' 老师（主页）">找到老师</a>' : '';
     return link + ext;
