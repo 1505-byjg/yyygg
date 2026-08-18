@@ -274,7 +274,7 @@
         const imgSrc = (typeof rawImg === "string" && rawImg.startsWith("data:")) ? rawImg : esc(rawImg);
         return `
         <div class="hero-slide wm" data-wm="${WM_TEXT}">
-          ${imgSrc ? `<img src="${imgSrc}" alt="${esc(it.title)}" loading="eager" decoding="async" onerror="if(!this.dataset.r1){this.dataset.r1=1;this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.classList.add('img-broken');}" />` : ""}
+          ${imgSrc ? `<img src="${imgSrc}" alt="${esc(it.title)}" loading="eager" decoding="async" onload="this.classList.add('loaded')" onerror="if(!this.dataset.r1){this.dataset.r1=1;this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.classList.add('img-broken');}" />` : ""}
           <div class="hero-cap">
             ${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">` : ""}
               <h2>${esc(it.title)}</h2>
@@ -308,6 +308,10 @@
     const hero = $(".hero");
     if (hero) { hero.addEventListener("mouseenter", stop); hero.addEventListener("mouseleave", play); }
     play();
+    // 兜底：若 3s 后仍有图未触发 onload（极少数边缘情况），强制显示，避免卡在透明
+    setTimeout(() => {
+      $$(".hero-slide img", track).forEach((im) => { if (!im.classList.contains("img-broken")) im.classList.add("loaded"); });
+    }, 3000);
   }
 
 
