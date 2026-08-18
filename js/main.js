@@ -257,7 +257,8 @@
       const r = await fetch("/api/hero");
       const d = await r.json();
       HERO_ITEMS = Array.isArray(d.items) ? d.items : [];
-    } catch { HERO_ITEMS = []; }
+      LS.set("hero", HERO_ITEMS);          // 缓存成功数据，网络不稳时也能秒开
+    } catch { /* 保留 prefill 的缓存值，不置空 */ }
   }
 
   /* ---------- 6. 全屏轮播 Banner ---------- */
@@ -753,7 +754,7 @@
   async function loadFanPosts() {
     try {
       const r = await fetch("/api/fanposts");
-      if (r.ok) { const d = await r.json(); FAN_POSTS = d.posts || []; }
+      if (r.ok) { const d = await r.json(); FAN_POSTS = d.posts || []; LS.set("fanposts", FAN_POSTS); }
     } catch {}
   }
 
@@ -1001,6 +1002,7 @@
         // 用 API 数据覆盖内置静态数据
         MATERIALS.length = 0;
         for (const m of d.materials) MATERIALS.push(m);
+        LS.set("materials", MATERIALS);   // 缓存成功数据，网络不稳时也能秒开
       }
     } catch {}
   }
@@ -1063,16 +1065,58 @@
   }
 
   /* ---------- 15. 启动 ---------- */
-  // 超时兜底：避免某个数据请求在网络不佳（尤其移动端 webview）时永久挂起，
-  // 导致整个 boot 卡在 await、__appBooted 永不置位，从而引发 load-guard 误报「未能正常启动」。
-  function withTimeout(p, ms, label) {
-    return Promise.race([
-      p,
-      new Promise((_, reject) => setTimeout(() => reject(new Error((label || "操作") + " 超时(" + ms + "ms)")), ms))
-    ]);
+  // 数据缓存：用 localStorage 缓存上次成功加载的数据，网络不稳时先用缓存渲染，避免空白
+  const LS = {
+    get(k) { try { const v = localStorage.getItem("sf_cache_" + k); return v ? JSON.parse(v) : null; } catch { return null; } },
+    set(k, v) { try { localStorage.setItem("sf_cache_" + k, JSON.stringify(v)); } catch {} }
+  };
+  let _hadCache = false;
+  function prefillFromCache() {
+    _hadCache = !!(LS.get("hero") || LS.get("fanposts") || LS.get("materials"));
+    const h = LS.get("hero"); if (Array.isArray(h)) HERO_ITEMS = h;
+    const f = LS.get("fanposts"); if (Array.isArray(f)) FAN_POSTS = f;
+    const m = LS.get("materials"); if (Array.isArray(m)) { MATERIALS.length = 0; m.forEach((x) => MATERIALS.push(x)); }
+  }
+  // 软超时：超时后不 reject（避免中断 boot 导致空白），而是 resolve 哨兵让渲染继续走缓存/已填数据
+  function softRace(p, ms) {
+    return Promise.race([p, new Promise((res) => setTimeout(() => res({ __timedOut: true }), ms))]);
+  }
+  // 首屏渲染：用 prefill 的缓存（或初始数据）立即绘制，保证秒开、不空白
+  function firstPaint(page) {
+    if (page === "index") {
+      setupAnnPopup();
+      initHero();
+      renderMaterials($("#matGrid"));
+      renderFanfic($("#fanGrid"));
+    } else if (page === "material") {
+      renderMaterials($("#matGrid"));
+      scrollToHashFromSearch();
+    } else if (page === "fanfic") {
+      renderFanfic($("#fanGrid"));
+      scrollToHashFromSearch();
+      initComposer();
+      const editSave = $("#fanEditSave");
+      if (editSave) editSave.addEventListener("click", saveFanEdit);
+    }
+  }
+  // 数据到达后补渲染：用最新数据刷新（无变化则视觉不变）；一次性绑定只在首屏做
+  function refreshPaint(page) {
+    if (page === "index") {
+      initHero();
+      renderMaterials($("#matGrid"));
+      renderFanfic($("#fanGrid"));
+      loadAnnouncements();
+    } else if (page === "material") {
+      renderMaterials($("#matGrid"));
+      scrollToHashFromSearch();
+    } else if (page === "fanfic") {
+      renderFanfic($("#fanGrid"));
+      scrollToHashFromSearch();
+    }
   }
   async function boot() {
    window.__appBooted = true;   // 立即标记已启动：即便后续 await 卡顿也不误报警（根治移动端红条）
+   prefillFromCache();          // 先用缓存填全局变量，网络差也能秒开内容（根治移动端空白）
    try {
     // 同人大图预览：全局仅绑定一次，点击带 data-zoom 的图片打开 lightbox。Esc 关闭大图
     if (!window.__fanZoomBound) {
@@ -1095,29 +1139,22 @@
     initTheme(); initNav(); initFloatBar();
     initSiteTips();         // 后台站点提示横幅（按页面范围展示）
 
-    await withTimeout(Promise.all([initSession(), loadMaterials(), loadHero(), loadFanPosts()]), 12000, "数据加载");   // 并行拉取数据（带超时兜底，避免挂起）
-    initSearch();                                          // 搜索依赖 MATERIALS，要在 loadMaterials 后
     const page = document.body.dataset.page;
-    if (page === "index") {
-      setupAnnPopup();           // 公告弹窗监听（须在 loadAnnouncements 前）
-      initHero();                // 用 API 拉到的轮播数据重新渲染（覆盖静态占位图）
-      renderMaterials($("#matGrid"));
-      renderFanfic($("#fanGrid"));
-      loadAnnouncements();        // 首页公告（公开，无需登录）
-    } else if (page === "material") {
-      renderMaterials($("#matGrid"));
-      scrollToHashFromSearch();
-    } else if (page === "fanfic") {
-      await withTimeout(loadFanPosts(), 12000, "同人数据加载");
-      renderFanfic($("#fanGrid"));
-      scrollToHashFromSearch();
-      initComposer();
-      const editSave = $("#fanEditSave");
-      if (editSave) editSave.addEventListener("click", saveFanEdit);
-    }
+    firstPaint(page);       // ① 首屏：用缓存立即渲染，秒开、不空白
+
+    const SOFT_MS = window.__SOFT_TIMEOUT || 12000;   // 超时阈值可调（移动端网络差时可经调试提高）
+    const race = await softRace(Promise.all([initSession(), loadMaterials(), loadHero(), loadFanPosts()]), SOFT_MS);
+    const timedOut = race && race.__timedOut;   // 超时不再中断渲染：用 prefill 缓存兜底，后台 fetch 自行完成
+    initSearch();          // 搜索依赖 MATERIALS，要在 loadMaterials 后
+    refreshPaint(page);    // ② 数据到达后补渲染一次（用最新数据刷新，无变化则视觉不变）
+
     initLazyAndWatermark(); initReveal();
     // 兜底：极端情况下若 IO 未触发，定时强制显示，避免内容永久隐藏
     setTimeout(() => { $$(".reveal:not(.in)").forEach((e) => e.classList.add("in")); }, 1500);
+    // 仅「首次访问（无缓存）且数据加载超时」给温和提示，避免默默空白；有缓存时用户已看到内容，不弹
+    if (timedOut && !_hadCache && window.__reportWarn) {
+      window.__reportWarn("网络加载较慢或超时：当前为首次访问且无本地缓存，内容暂无法显示。请检查网络后刷新；成功后内容会被缓存，下次可离线秒开。");
+    }
     } catch (err) {
       // 真实错误暴露出来，便于定位（而不是默默空白）
       try { if (window.__reportBootError) window.__reportBootError(err); else console.error("[boot] 启动出错：", err); } catch (_) {}

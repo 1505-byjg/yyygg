@@ -66,6 +66,11 @@
     report("页面脚本启动出错：" + msg + "（已尽量显示已加载内容，请刷新重试；若反复出现请把此信息反馈给站务）。", false);
   };
 
+  // 非脚本错误的中性提示（如网络超时、首次访问无缓存）——不带「脚本出错」误导前缀
+  window.__reportWarn = function (msg) {
+    report(msg, false);
+  };
+
   // 捕获阶段监听：<script>/<link> 资源加载失败会触发 error 事件
   // （这类事件不冒泡到 window.onerror，但捕获阶段可截获）
   window.addEventListener("error", function (e) {
