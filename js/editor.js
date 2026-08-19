@@ -669,9 +669,9 @@
         let r, isUpdate = false;
         if (work.fanpostId) {
           isUpdate = true;
-          r = await api('/api/fanposts/' + work.fanpostId, { method: 'PUT', body: JSON.stringify(payload) });   // 已在同人专区有卡片 → 直接更新该卡片
+          r = await api('/admin/fanposts/' + work.fanpostId, { method: 'PUT', body: JSON.stringify(payload) });   // 已在同人专区有卡片 → 走本地 serve.cjs 真实更新该卡片
         } else {
-          r = await api('/api/fanposts', { method: 'POST', body: JSON.stringify(payload) });                    // 首次发布 → 新建一张卡片
+          r = await api('/admin/fanposts', { method: 'POST', body: JSON.stringify(payload) });                    // 首次发布 → 走本地 serve.cjs 真实新建一张卡片
         }
         const d = r.data || {};
         if (r.ok) {
@@ -680,14 +680,14 @@
           toast(isUpdate ? '已更新到同人专区（最新章已同步）✨' : '已发布到同人专区 · 文章类目 ✨');
         } else if (r.status === 404 && isUpdate) {
           // 关联的卡片已被删除：退回新建一张卡片
-          const r2 = await api('/api/fanposts', { method: 'POST', body: JSON.stringify(payload) });
+          const r2 = await api('/admin/fanposts', { method: 'POST', body: JSON.stringify(payload) });
           const d2 = r2.data || {};
           if (r2.ok) { const pid2 = (d2.post && d2.post.id) || d2.id; if (pid2) { work.fanpostId = pid2; await saveWork(true); } toast('已发布到同人专区 · 文章类目 ✨'); }
           else { toast(d2.msg || '发布失败', true); }
         }
         else if (r.status === 403) { toast(d.msg || '发布被拒绝：权限不足或内容需调整', true); }
         else { toast(d.msg || ('发布失败（' + r.status + '）'), true); }
-      } catch (e) { toast('网络错误：' + ((e && e.message) || '发布失败，请检查网络'), true); }
+      } catch (e) { toast('发布失败：' + ((e && e.message) || '网络错误') + '（请先 node tools/serve.cjs，并通过 http://localhost:8080/editor.html 打开本页再发布）', true); }
     }
 
     // 更多菜单
