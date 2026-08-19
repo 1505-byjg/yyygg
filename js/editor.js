@@ -737,7 +737,21 @@
   // ============================================================
   //  初始化
   // ============================================================
+  // 顶栏含「标题 + 标签 + 作者/配对/连载」多行内容，高度随内容变化；
+  // 把真实高度同步给 --ed-top，ed-main 内边距 / 工具栏 sticky / 侧边栏都靠它定位，避免作者行被裁掉或压到编辑器上。
+  function syncHeaderHeight() {
+    const bar = document.querySelector(".ed-topbar");
+    if (!bar) return;
+    const h = Math.round(bar.getBoundingClientRect().height);
+    if (h > 0) document.documentElement.style.setProperty("--ed-top", h + "px");
+  }
+
   async function init() {
+    syncHeaderHeight();
+    const bar = document.querySelector(".ed-topbar");
+    if (bar && window.ResizeObserver) new ResizeObserver(syncHeaderHeight).observe(bar);
+    window.addEventListener("resize", syncHeaderHeight);
+    window.addEventListener("load", syncHeaderHeight);
     bindEvents();
     initTheme();
     checkSession();   // 纯静态站：直接以可发布身份初始化编辑器
