@@ -47,6 +47,25 @@ html.dark .ed-tag-chips .t { background: color-mix(in srgb, var(--m-orange-700) 
   cursor: pointer; outline: none;
 }
 
+/* 独立的"作品信息"第二行（作者/配对/连载），保证桌面与手机都能看见且不被裁切 */
+.ed-meta-bar {
+  max-width: 1320px; margin: 0 auto; padding: 6px 14px 8px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  border-top: 1px dashed var(--line);
+}
+.ed-meta-bar .ed-meta-label {
+  font-size: 12px; font-weight: 700; color: var(--text-soft);
+  white-space: nowrap; padding: 2px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--m-orange-500) 14%, transparent);
+  color: var(--m-orange-700);
+}
+html.dark .ed-meta-bar .ed-meta-label {
+  background: color-mix(in srgb, var(--m-orange-700) 26%, transparent);
+  color: #e8c3a0;
+}
+.ed-meta-bar .ed-author-input,
+.ed-meta-bar .ed-serial-select { padding: 5px 12px; font-size: 13px; }
+
 .ed-top-actions { display: flex; align-items: center; gap: 8px; position: relative; }
 .ed-pill {
   border: 1px solid var(--line); background: var(--card); color: var(--text);
