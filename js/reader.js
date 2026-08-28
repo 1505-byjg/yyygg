@@ -167,7 +167,7 @@
     // 移除正文中单独成行的连载状态标签（短篇/连载中/已完结）
     $$(".reader-content h2, .reader-content h3, .reader-content p, .reader-content div").forEach((el) => {
       const t = el.textContent.trim();
-      if ((t === "短篇" || t === "连载中" || t === "已完结") && el.children.length === 0) el.remove();
+      if ((t === "短篇" || t === "长篇" || t === "连载中" || t === "已完结") && el.children.length === 0) el.remove();
     });
 
     const heads = $$("h2, h3", c);

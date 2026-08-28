@@ -591,7 +591,8 @@
       // 顶部：连载状态药丸 + 配对小标（并排居中）
       const isSerial = (serial === true || serial === "serial");
       const isDone = (serial === "completed");
-      const serialLabel = isSerial ? "连载中" : isDone ? "已完结" : "短篇";
+      const isLong = (serial === "long");
+      const serialLabel = isSerial ? "连载中" : isDone ? "已完结" : isLong ? "长篇" : "短篇";
       const pillFont = '600 22px "PingFang SC","Microsoft YaHei",sans-serif';
       ctx.font = pillFont;
       const padX = 26, pillH = 40, pillY = 52;
@@ -605,7 +606,7 @@
       const gx = (W - groupW) / 2;
       // 状态药丸
       rr(gx, pillY, pillW, pillH, pillH / 2);
-      ctx.fillStyle = isSerial ? "rgba(217,166,121,0.94)" : isDone ? "rgba(94,122,150,0.94)" : "rgba(150,140,130,0.85)";
+      ctx.fillStyle = isSerial ? "rgba(217,166,121,0.94)" : isDone ? "rgba(94,122,150,0.94)" : isLong ? "rgba(126,156,184,0.92)" : "rgba(150,140,130,0.85)";
       ctx.fill();
       ctx.fillStyle = "#fff";
       ctx.font = pillFont;
@@ -660,7 +661,7 @@
       setStatus('发布中…');
       const authorName = (authorInput && authorInput.value.trim()) || '';
       const serial = (serialSelect && serialSelect.value) || 'single';
-      const serialLabel = serial === 'serial' ? '连载中' : serial === 'completed' ? '已完结' : '短篇';
+      const serialLabel = serial === 'serial' ? '连载中' : serial === 'completed' ? '已完结' : serial === 'long' ? '长篇' : '短篇';
       let cover = '';
       try { cover = generateTitleCover(title, authorName, pairVal, serial); }
       catch (ce) { cover = ''; }   // 封面生成失败不阻断发布

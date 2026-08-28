@@ -491,7 +491,7 @@
     $("#fanEditTitle").value = p.title || "";
     $("#fanEditAuthor").value = p.author || "";
     if ($("#fanEditPair")) $("#fanEditPair").value = ["年上", "年下", "无差"].includes(p.pair) ? p.pair : "无差";
-    if ($("#fanEditSerial")) $("#fanEditSerial").value = (p.serial && ["serial", "completed", "single"].includes(p.serial)) ? p.serial : "single";
+    if ($("#fanEditSerial")) $("#fanEditSerial").value = (p.serial && ["serial", "completed", "single", "long"].includes(p.serial)) ? p.serial : "single";
     $("#fanEditContent").value = p.content || "";
     renderEditTags($("#fanEditTags"), p.tags || []);
     modal.classList.add("open");
@@ -687,7 +687,7 @@
       : (f.kind === "image" ? "图片" : f.kind === "video" ? "视频" : "无标题");
     // 连载/合集文章：卡片标注状态，并解析出最后一章名称
     const isCollection = (f.serial === true || f.serial === "serial" || f.serial === "completed");
-    const serialLabel = isCollection ? ((f.serial === "completed") ? "已完结" : "连载中") : "短篇";
+    const serialLabel = (f.serial === "serial" || f.serial === true) ? "连载中" : (f.serial === "completed") ? "已完结" : (f.serial === "long") ? "长篇" : "短篇";
     let lastCh = "", chCount = 0;
     if (f.content) {
       try {
