@@ -116,7 +116,7 @@ html[data-theme="night"] .rtb-btn.r-mode-btn { background: var(--r-bg-2); }
   /* 由 reader.js 注入的排版变量 */
   --rf-fz: 18px;
   --rf-lh: 1.95;
-  --rf-w: 720px;
+  --rf-w: min(720px, 94%);
   --rf-ff: "PingFang SC", "Microsoft YaHei", sans-serif;
   max-width: var(--rf-w); margin: 0 auto;
 }
@@ -401,7 +401,7 @@ html[data-theme="night"] .rtb-btn.r-mode-btn { background: var(--r-bg-2); }
 /* ---------- 9. 响应式 ---------- */
 @media (max-width: 720px) {
   .reader-shell { padding: 76px 18px 32px; }
-  .reader-article { --rf-fz: 17px; --rf-w: 100%; }
+  .reader-article { --rf-fz: 17px; }
   .rtb-title { font-size: 13px; }
   .reader-title { font-size: calc(var(--rf-fz) * 1.5); }
   .reader-chapters { flex-direction: column; gap: 10px; }

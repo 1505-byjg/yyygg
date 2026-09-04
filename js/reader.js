@@ -31,7 +31,7 @@
 
   const STORE_KEY = "reader_settings_v1";
   const CONT_KEY = "reader_continuous_v1";
-  const DEFAULTS = { theme: "light", fz: 18, ff: "sans", lh: 1.95, w: 720 };
+  const DEFAULTS = { theme: "light", fz: 18, ff: "sans", lh: 1.95, w: "min(720px, 94%)" };
   const FF = {
     sans: '"PingFang SC","Microsoft YaHei",sans-serif',
     serif: '"Noto Serif SC","Songti SC","SimSun",Georgia,serif',
@@ -57,7 +57,7 @@
     if (art) {
       art.style.setProperty("--rf-fz", settings.fz + "px");
       art.style.setProperty("--rf-lh", settings.lh);
-      art.style.setProperty("--rf-w", settings.w + "px");
+      art.style.setProperty("--rf-w", settings.w);
       art.style.setProperty("--rf-ff", FF[settings.ff] || FF.sans);
     }
     $$(".seg[data-seg]").forEach((seg) => {
@@ -411,7 +411,7 @@
         const seg = b.closest(".seg");
         const key = seg.dataset.seg;
         const raw = b.dataset.v;
-        settings[key] = (key === "fz" || key === "w" || key === "lh") ? Number(raw) : raw;
+        settings[key] = (key === "fz" || key === "lh") ? Number(raw) : raw;
         saveSettings();
         applySettings();
       });
